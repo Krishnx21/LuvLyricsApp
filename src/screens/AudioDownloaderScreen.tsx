@@ -825,7 +825,33 @@ Only provide the JSON array, no other text.`;
 
     return (
         <View style={styles.container}>
-            <LinearGradient colors={['#1F1F1F', '#000']} style={StyleSheet.absoluteFill} />
+            {/* Violet soft gradient morphism background */}
+            <View style={[StyleSheet.absoluteFill, { backgroundColor: '#08000F' }]} />
+            <LinearGradient
+                colors={['rgba(127,19,236,0.38)', 'rgba(100,0,200,0.18)', 'transparent']}
+                style={styles.blobTopLeft}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+            />
+            <LinearGradient
+                colors={['rgba(160,20,255,0.32)', 'rgba(80,0,180,0.12)', 'transparent']}
+                style={styles.blobBottomRight}
+                start={{ x: 1, y: 1 }}
+                end={{ x: 0, y: 0 }}
+            />
+            <LinearGradient
+                colors={['rgba(90,0,180,0.22)', 'rgba(60,0,140,0.08)', 'transparent']}
+                style={styles.blobCentre}
+                start={{ x: 0.5, y: 0 }}
+                end={{ x: 0.5, y: 1 }}
+            />
+            {/* Dark vignette to deepen edges */}
+            <LinearGradient
+                colors={['rgba(0,0,0,0.45)', 'transparent', 'rgba(0,0,0,0.6)']}
+                style={StyleSheet.absoluteFill}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 0, y: 1 }}
+            />
             <SafeAreaView style={styles.safeArea}>
                 
                 {/* Header Section - Fixed Back Button */}
@@ -1236,6 +1262,31 @@ const styles = StyleSheet.create({
     safeArea: {
         flex: 1,
     },
+    // Soft gradient morphism blobs (LinearGradient → transparent, no hard edges)
+    blobTopLeft: {
+        position: 'absolute',
+        width: 420,
+        height: 420,
+        borderRadius: 9999,
+        top: -140,
+        left: -100,
+    },
+    blobBottomRight: {
+        position: 'absolute',
+        width: 380,
+        height: 380,
+        borderRadius: 9999,
+        bottom: -100,
+        right: -90,
+    },
+    blobCentre: {
+        position: 'absolute',
+        width: 320,
+        height: 320,
+        borderRadius: 9999,
+        top: '28%',
+        left: '5%',
+    },
     header: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -1244,13 +1295,12 @@ const styles = StyleSheet.create({
         paddingTop: 8,
     },
     backBtn: { padding: 8, marginRight: 8 },
-    
-    // Header Redesign
+
+    // Header
     headerContainer: {
         paddingHorizontal: 16,
         paddingTop: 12,
         paddingBottom: 4,
-        backgroundColor: '#000',
     },
     unifiedSearchBlock: {
         gap: 12,
@@ -1259,11 +1309,11 @@ const styles = StyleSheet.create({
     searchBarContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#1E1E1E',
-        borderRadius: 12,
-        height: 48,
+        backgroundColor: 'rgba(255,255,255,0.08)',
+        borderRadius: 22,
+        height: 46,
         borderWidth: 1,
-        borderColor: '#333'
+        borderColor: 'rgba(127,19,236,0.25)',
     },
     unifiedInput: {
         flex: 1,
@@ -1281,20 +1331,22 @@ const styles = StyleSheet.create({
     segmentedControl: {
         flex: 1,
         flexDirection: 'row',
-        backgroundColor: '#1E1E1E',
-        borderRadius: 8,
-        padding: 4,
-        height: 40,
-        gap: 4
+        backgroundColor: 'rgba(255,255,255,0.06)',
+        borderRadius: 12,
+        padding: 3,
+        height: 38,
+        gap: 3,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.08)',
     },
     segmentBtn: {
         flex: 1,
-        borderRadius: 6,
+        borderRadius: 10,
         justifyContent: 'center',
         alignItems: 'center'
     },
     segmentBtnActive: {
-        backgroundColor: '#333'
+        backgroundColor: 'rgba(127,19,236,0.35)',
     },
     segmentText: {
         color: '#666',
@@ -1302,99 +1354,102 @@ const styles = StyleSheet.create({
         fontWeight: '600'
     },
     segmentTextActive: {
-        color: '#fff',
-        fontWeight: 'bold'
+        color: '#C084FC',
+        fontWeight: '700'
     },
     actionIconBtn: {
-        width: 40,
-        height: 40,
+        width: 38,
+        height: 38,
         borderRadius: 12,
-        backgroundColor: '#1E1E1E',
+        backgroundColor: 'rgba(255,255,255,0.07)',
         justifyContent: 'center',
         alignItems: 'center',
         borderWidth: 1,
-        borderColor: '#333'
+        borderColor: 'rgba(255,255,255,0.1)',
     },
-    
-    // Tab Bar Redesign
+
+    // Tab Bar — slim pill tabs
     tabBar: {
-        height: 48,
-        marginBottom: 8,
-        borderBottomWidth: 1,
-        borderBottomColor: '#222'
+        marginBottom: 6,
     },
     tabItem: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingHorizontal: 16,
-        paddingVertical: 8,
-        backgroundColor: 'transparent',
-        borderRadius: 20,
-        marginRight: 4,
-        borderWidth: 0,
+        paddingHorizontal: 12,
+        paddingVertical: 5,
+        backgroundColor: 'rgba(255,255,255,0.05)',
+        borderRadius: 16,
+        marginRight: 6,
+        borderWidth: 1,
+        borderColor: 'transparent',
     },
     activeTabItem: {
-        backgroundColor: '#222',
+        backgroundColor: 'rgba(127,19,236,0.22)',
+        borderColor: 'rgba(127,19,236,0.45)',
     },
     tabText: {
-        color: '#666',
-        fontSize: 14,
-        fontWeight: '600'
+        color: '#555',
+        fontSize: 12,
+        fontWeight: '600',
+        maxWidth: 100,
     },
     activeTabText: {
-        color: Colors.primary,
-        fontWeight: 'bold'
+        color: '#C084FC',
+        fontWeight: '700',
     },
     newTabBtn: {
-        width: 36,
-        height: 36,
-        borderRadius: 18,
-        backgroundColor: '#1E1E1E',
+        width: 30,
+        height: 30,
+        borderRadius: 15,
+        backgroundColor: 'rgba(255,255,255,0.07)',
         justifyContent: 'center',
         alignItems: 'center',
-        marginLeft: 8
+        marginLeft: 4,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.1)',
     },
     tabBarScroll: {
-        paddingHorizontal: 8
+        paddingHorizontal: 8,
+        alignItems: 'center',
+        paddingVertical: 4,
     },
     closeTabBtn: {
-        marginLeft: 6
+        marginLeft: 5,
     },
     actionIconBtnActive: {
-        backgroundColor: Colors.primary, 
-        borderColor: Colors.primary
+        backgroundColor: Colors.primary,
+        borderColor: Colors.primary,
     },
     bulkTitleContainer: {
-        paddingHorizontal: 16, 
+        paddingHorizontal: 16,
         marginBottom: 16
     },
 
-    
     // Mode Switcher
     modeSwitch: {
         flexDirection: 'row',
-        backgroundColor: '#111',
-        borderRadius: 8,
+        backgroundColor: 'rgba(255,255,255,0.05)',
+        borderRadius: 12,
         marginHorizontal: 16,
-        marginBottom: 16,
-        padding: 4,
+        marginBottom: 12,
+        padding: 3,
         borderWidth: 1,
-        borderColor: '#333'
+        borderColor: 'rgba(255,255,255,0.08)',
     },
     modeBtn: {
         flex: 1,
-        paddingVertical: 8,
+        paddingVertical: 7,
         alignItems: 'center',
-        borderRadius: 6
+        borderRadius: 10,
     },
     activeModeBtn: {
-        backgroundColor: '#333'
+        backgroundColor: 'rgba(127,19,236,0.35)',
     },
-    modeText: { color: '#666', fontWeight: '600' },
-    activeModeText: { color: '#fff' },
+    modeText: { color: '#555', fontWeight: '600', fontSize: 13 },
+    activeModeText: { color: '#C084FC', fontWeight: '700', fontSize: 13 },
 
     // Content & Grid
-    content: { flex: 1, backgroundColor: '#000' },
+    content: { flex: 1 },
     gridContent: { padding: 12, paddingBottom: 120 },
     center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
     statusText: { color: '#666', marginTop: 16, fontSize: 13 },
@@ -1437,8 +1492,8 @@ const styles = StyleSheet.create({
     // Bulk UI
     bulkContainer: { padding: 16, flex: 1 },
     label: { color: '#666', marginBottom: 8, marginTop: 16, fontWeight: '700', fontSize: 11, textTransform: 'uppercase' },
-    playlistInput: { backgroundColor: '#1E1E1E', color: '#fff', padding: 14, borderRadius: 12, fontSize: 16, borderWidth: 1, borderColor: '#333' },
-    jsonInput: { backgroundColor: '#1E1E1E', color: '#ccc', padding: 12, borderRadius: 12, fontSize: 13, height: 160, textAlignVertical: 'top', fontFamily: 'monospace', borderWidth: 1, borderColor: '#333' },
+    playlistInput: { backgroundColor: 'rgba(255,255,255,0.07)', color: '#fff', padding: 14, borderRadius: 18, fontSize: 16, borderWidth: 1, borderColor: 'rgba(127,19,236,0.25)' },
+    jsonInput: { backgroundColor: 'rgba(255,255,255,0.07)', color: '#ccc', padding: 12, borderRadius: 18, fontSize: 13, height: 160, textAlignVertical: 'top', fontFamily: 'monospace', borderWidth: 1, borderColor: 'rgba(127,19,236,0.25)' },
     copyPromptBtn: { alignSelf: 'flex-start', paddingVertical: 8, paddingHorizontal: 16, backgroundColor: '#1E1E1E', borderRadius: 20, marginTop: 12 },
     copyPromptText: { color: Colors.primary, fontSize: 12, fontWeight: '600' },
     parseBtn: { backgroundColor: Colors.primary, padding: 18, borderRadius: 16, alignItems: 'center', marginTop: 32, flexDirection: 'row', justifyContent: 'center', gap: 8 },
