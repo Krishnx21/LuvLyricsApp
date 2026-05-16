@@ -54,14 +54,18 @@ class DownloadManager {
 
         const songDir = `${FileSystem.documentDirectory}music/${staging.id}/`;
         
-        // Helper to update progress with small delay for UI rendering
-        const updateProgress = async (progress: number) => {
-            onProgress(progress);
-            await new Promise(resolve => setTimeout(resolve, 50)); // 50ms delay for UI
+        // Throttle progress updates for smooth UI without slowing network I/O.
+        let lastProgressEmit = 0;
+        const updateProgress = (progress: number) => {
+            const now = Date.now();
+            if (progress >= 1 || now - lastProgressEmit >= 120) {
+                lastProgressEmit = now;
+                onProgress(progress);
+            }
         };
         
         // 1. Prepare Directory
-        await updateProgress(0.05); // 5% - Starting
+        updateProgress(0.05); // 5% - Starting
         // Clean up if exists (atomic retry)
         const dirInfo = await FileSystem.getInfoAsync(songDir);
         if (dirInfo.exists) {
@@ -71,7 +75,7 @@ class DownloadManager {
 
         try {
             // 2. Resolve & Download Audio
-            await updateProgress(0.1); // 10% - Directory ready
+            updateProgress(0.1); // 10% - Directory ready
             let downloadUrl = staging.selectedQuality.url;
             const format = staging.selectedQuality.format || 'mp3';
             const audioFile = `${songDir}audio.${format}`;
@@ -82,9 +86,9 @@ class DownloadManager {
                 downloadUrl,
                 audioFile,
                 {},
-                async (downloadProgress) => {
+                (downloadProgress) => {
                     const progress = downloadProgress.totalBytesWritten / downloadProgress.totalBytesExpectedToWrite;
-                    await updateProgress(0.1 + (progress * 0.7)); // 10% to 80%
+                    updateProgress(0.1 + (progress * 0.7)); // 10% to 80%
                 }
             );
 
@@ -92,14 +96,14 @@ class DownloadManager {
             
             try {
                 await audioDownload.downloadAsync();
-                await updateProgress(0.8); // 80% - Audio downloaded
+                updateProgress(0.8); // 80% - Audio downloaded
             } finally {
                 this.activeDownloads.delete(staging.id);
             }
 
 
             // 3. Download Cover Art
-            await updateProgress(0.85); // 85% - Starting cover download
+            updateProgress(0.85); // 85% - Starting cover download
             let coverLocalUri: string | undefined = undefined;
             if (staging.selectedCoverUri) {
                 const coverFile = `${songDir}cover.jpg`;
@@ -107,11 +111,11 @@ class DownloadManager {
                 await coverDownload.downloadAsync();
                 coverLocalUri = coverFile;
             }
-            await updateProgress(0.9); // 90% - Cover downloaded
+            updateProgress(0.9); // 90% - Cover downloaded
 
 
             // 4. Save Lyrics
-            await updateProgress(0.95); // 95% - Saving lyrics
+            updateProgress(0.95); // 95% - Saving lyrics
             if (staging.selectedLyrics) {
                 const lyricsFile = `${songDir}lyrics.lrc`;
                 await FileSystem.writeAsStringAsync(lyricsFile, staging.selectedLyrics);
@@ -127,7 +131,7 @@ class DownloadManager {
                 const safDir = settings.downloadDirectoryUri;
 
                 if (safDir) {
-                    await updateProgress(0.96); // 97% - Exporting
+                    updateProgress(0.96); // 97% - Exporting
                     if (__DEV__) console.log('[DownloadManager] SAF configured, exporting to:', safDir);
                     
                     const mimeType = format === 'm4a' ? 'audio/mp4' : 'audio/mpeg';
@@ -173,7 +177,7 @@ class DownloadManager {
                 gradientId: Math.floor(Math.random() * 5).toString() // Random gradient
             };
 
-            await updateProgress(1.0); // 100% - Complete
+            updateProgress(1.0); // 100% - Complete
             return newSong;
 
         } catch (error) {

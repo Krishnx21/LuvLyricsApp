@@ -21,7 +21,7 @@ export const BackgroundDownloader = () => {
     const addSong = useSongsStore(state => state.addSong);
     const fetchSongs = useSongsStore(state => state.fetchSongs);
     const activeDownloads = useRef<Set<string>>(new Set());
-    const MAX_CONCURRENT = 1; // Only 1 download at a time
+    const MAX_CONCURRENT = 2; // 2-at-a-time is a good speed/reliability balance
     
     // Prevent screen from sleeping while downloading
     const hasActiveDownloads = queue.some(item => item.status === 'downloading' || item.status === 'pending');

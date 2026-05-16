@@ -20,10 +20,12 @@
  *   <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE" />
  */
 
-import { Platform } from 'react-native';
+import { AppState, AppStateStatus, Platform } from 'react-native';
+import { Buffer } from 'buffer';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import Zeroconf, { ImplType } from 'react-native-zeroconf';
 import { usePlayerStore } from '../store/playerStore';
-import { useDownloadQueueStore, QueueItem } from '../store/downloadQueueStore';
+import { useDownloadQueueStore } from '../store/downloadQueueStore';
 import { useDesktopBridgeSettingsStore } from '../store/desktopBridgeSettingsStore';
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -39,6 +41,8 @@ interface TcpSocketModule {
 }
 
 type ZeroconfImplType = (typeof ImplType)[keyof typeof ImplType];
+type BridgeSource = 'phone' | 'desktop';
+type HandoffReason = 'unload_signal' | 'socket_close' | 'heartbeat_timeout' | 'network_loss';
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
@@ -222,6 +226,7 @@ function sha1(msg: number[]): number[] {
 // ── DesktopBridgeService class ────────────────────────────────────────────────
 
 class DesktopBridgeService {
+  private static readonly DEVICE_ID_KEY = '@desktop_bridge_device_id';
   private wsServer: any = null;
   private httpServer: any = null;
   private clients: Map<number, WsClient> = new Map();
@@ -230,6 +235,194 @@ class DesktopBridgeService {
   private downloadUnsubscribe: (() => void) | null = null;
   private zeroconf: any = null;
   private running = false;
+  private bridgeSource: BridgeSource = 'phone';
+  private sourceTransitionInFlight = false;
+  private desktopConnected = false;
+  private lastDesktopHeartbeatAt = 0;
+  private lastHeartbeatLogAt = 0;
+  private heartbeatCheckTimer: NodeJS.Timeout | null = null;
+  private pendingHandoffTimer: NodeJS.Timeout | null = null;
+  private readonly HEARTBEAT_TIMEOUT_MS = 3000;
+  private readonly HANDOFF_GRACE_MS = 1800;
+  private latestDesktopPosition: number | null = null;
+  private desktopWasPlaying = false;
+  private appStateSub: { remove: () => void } | null = null;
+  private ipWatchTimer: NodeJS.Timeout | null = null;
+  private lastKnownIp: string | null = null;
+  private deviceId: string | null = null;
+  private deviceName = 'LuvLyrics Phone';
+  private mdnsPublishLogAt = 0;
+  private pingLogAt = 0;
+  private coverLogAt = 0;
+  private logServerError(tag: string, err: unknown): void {
+    if (err instanceof Error) {
+      console.error(`[DesktopBridge] ${tag} server error: ${err.message}`, err);
+      return;
+    }
+    if (typeof err === 'string') {
+      console.error(`[DesktopBridge] ${tag} server error: ${err}`);
+      return;
+    }
+    try {
+      console.error(`[DesktopBridge] ${tag} server error:`, JSON.stringify(err));
+    } catch {
+      console.error(`[DesktopBridge] ${tag} server error:`, err);
+    }
+  }
+
+  private logDesktopEvent(event: string, extra?: Record<string, unknown>): void {
+    if (extra) {
+      console.log(`[DesktopBridge] ${event}`, JSON.stringify(extra));
+      return;
+    }
+    console.log(`[DesktopBridge] ${event}`);
+  }
+
+  private clearPendingHandoff(): void {
+    if (this.pendingHandoffTimer) {
+      clearTimeout(this.pendingHandoffTimer);
+      this.pendingHandoffTimer = null;
+    }
+  }
+
+  private markDesktopConnected(): void {
+    this.desktopConnected = true;
+    this.lastDesktopHeartbeatAt = Date.now();
+    this.clearPendingHandoff();
+    this.logDesktopEvent('desktop_connected');
+  }
+
+  private markDesktopHeartbeat(): void {
+    this.desktopConnected = true;
+    this.lastDesktopHeartbeatAt = Date.now();
+    if (Date.now() - this.lastHeartbeatLogAt > 1500) {
+      this.lastHeartbeatLogAt = Date.now();
+      this.logDesktopEvent('desktop_heartbeat');
+    }
+  }
+
+  private scheduleHandoffToPhone(reason: HandoffReason): void {
+    this.clearPendingHandoff();
+    this.pendingHandoffTimer = setTimeout(() => {
+      this.transitionSource('phone', reason);
+    }, this.HANDOFF_GRACE_MS);
+  }
+
+  private handleDesktopDisconnected(reason: HandoffReason): void {
+    if (this.clients.size > 0) return;
+    this.desktopConnected = false;
+    this.logDesktopEvent('desktop_disconnected', { reason });
+    this.scheduleHandoffToPhone(reason);
+  }
+
+  private startHeartbeatWatchdog(): void {
+    this.stopHeartbeatWatchdog();
+    this.heartbeatCheckTimer = setInterval(() => {
+      if (!this.running || this.bridgeSource !== 'desktop' || !this.desktopConnected) return;
+      const staleFor = Date.now() - this.lastDesktopHeartbeatAt;
+      if (staleFor > this.HEARTBEAT_TIMEOUT_MS) {
+        this.desktopConnected = false;
+        this.logDesktopEvent('desktop_stale', { staleForMs: staleFor });
+        this.scheduleHandoffToPhone('heartbeat_timeout');
+      }
+    }, 1000);
+  }
+
+  private stopHeartbeatWatchdog(): void {
+    if (this.heartbeatCheckTimer) {
+      clearInterval(this.heartbeatCheckTimer);
+      this.heartbeatCheckTimer = null;
+    }
+  }
+
+  private startIpWatchdog(): void {
+    this.stopIpWatchdog();
+    this.ipWatchTimer = setInterval(async () => {
+      if (!this.running) return;
+      const ip = await this.getLocalIp();
+      if (ip !== this.lastKnownIp) {
+        this.lastKnownIp = ip;
+        this.refreshMdnsAdvertisement('ip_change');
+      }
+    }, 5000);
+  }
+
+  private stopIpWatchdog(): void {
+    if (this.ipWatchTimer) {
+      clearInterval(this.ipWatchTimer);
+      this.ipWatchTimer = null;
+    }
+  }
+
+  private transitionSource(nextSource: BridgeSource, reason?: HandoffReason): void {
+    if (this.bridgeSource === nextSource || this.sourceTransitionInFlight) return;
+    this.sourceTransitionInFlight = true;
+    try {
+      const playerStore = usePlayerStore.getState();
+      if (nextSource === 'desktop') {
+        this.desktopWasPlaying = playerStore.isPlaying;
+        this.latestDesktopPosition = playerStore.position;
+        playerStore.pause();
+      } else {
+        if (this.latestDesktopPosition !== null) {
+          playerStore.seekTo(this.latestDesktopPosition);
+        }
+        if (this.desktopWasPlaying) {
+          playerStore.play();
+        }
+        if (reason) {
+          this.logDesktopEvent('source_handoff_to_phone(reason)', { reason });
+        }
+      }
+      this.bridgeSource = nextSource;
+    } finally {
+      this.sourceTransitionInFlight = false;
+    }
+  }
+
+  private handleAppStateChange = (state: AppStateStatus): void => {
+    if (state !== 'active') return;
+    this.refreshMdnsAdvertisement('foreground');
+    if (this.bridgeSource === 'desktop' && !this.desktopConnected) {
+      this.scheduleHandoffToPhone('network_loss');
+    }
+  };
+
+  private generateDeviceId(): string {
+    try {
+      if (typeof crypto !== 'undefined' && typeof (crypto as any).randomUUID === 'function') {
+        return (crypto as any).randomUUID();
+      }
+    } catch {
+      // ignore
+    }
+    return `ll-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+  }
+
+  private inferDeviceName(): string {
+    const constants = Platform.constants as Record<string, unknown> | undefined;
+    const model =
+      (constants?.Model as string | undefined) ||
+      (constants?.model as string | undefined) ||
+      (constants?.Brand as string | undefined);
+    if (model && model.trim()) return model.trim();
+    return Platform.OS === 'android' ? 'Android Phone' : 'iPhone';
+  }
+
+  private async ensureDeviceIdentity(): Promise<void> {
+    if (!this.deviceName || this.deviceName === 'LuvLyrics Phone') {
+      this.deviceName = this.inferDeviceName();
+    }
+    if (this.deviceId) return;
+    const existing = await AsyncStorage.getItem(DesktopBridgeService.DEVICE_ID_KEY);
+    if (existing && existing.trim()) {
+      this.deviceId = existing;
+      return;
+    }
+    const created = this.generateDeviceId();
+    this.deviceId = created;
+    await AsyncStorage.setItem(DesktopBridgeService.DEVICE_ID_KEY, created);
+  }
 
   async start(): Promise<void> {
     if (this.running) return;
@@ -240,13 +433,31 @@ class DesktopBridgeService {
       return;
     }
 
-    this.running = true;
-
     console.log('[DesktopBridge] Starting…');
 
-    this.startWsServer(tcpSocket);
-    this.startHttpServer(tcpSocket);
-    this.startMdns();
+    try {
+      await this.ensureDeviceIdentity();
+      await this.startWsServer(tcpSocket);
+      await this.startHttpServer(tcpSocket);
+    } catch (error) {
+      this.running = false;
+      this.wsServer?.close?.();
+      this.wsServer = null;
+      this.httpServer?.close?.();
+      this.httpServer = null;
+      this.clients.clear();
+      this.logServerError('Bridge startup', error);
+      console.warn(
+        '[DesktopBridge] Ports 8765/8766 are busy. Close older app/dev-client instance and relaunch.'
+      );
+      return;
+    }
+
+    this.running = true;
+    this.startHeartbeatWatchdog();
+    this.startIpWatchdog();
+    this.appStateSub = AppState.addEventListener('change', this.handleAppStateChange);
+    await this.startMdns('restart');
     this.subscribeToStores();
 
     console.log('[DesktopBridge] Started on ports', WS_PORT, HTTP_PORT);
@@ -254,6 +465,16 @@ class DesktopBridgeService {
 
   stop(): void {
     this.running = false;
+    this.stopHeartbeatWatchdog();
+    this.stopIpWatchdog();
+    this.clearPendingHandoff();
+    this.desktopConnected = false;
+    this.lastDesktopHeartbeatAt = 0;
+    this.bridgeSource = 'phone';
+    this.latestDesktopPosition = null;
+    this.desktopWasPlaying = false;
+    this.appStateSub?.remove?.();
+    this.appStateSub = null;
     this.playerUnsubscribe?.();
     this.playerUnsubscribe = null;
     this.downloadUnsubscribe?.();
@@ -265,9 +486,9 @@ class DesktopBridgeService {
     if (this.zeroconf) {
       try {
         if (Platform.OS === 'android') {
-          this.zeroconf.unpublishService('LuvLyrics', ImplType.DNSSD);
+          this.zeroconf.unpublishService(this.deviceName, ImplType.DNSSD);
         } else {
-          this.zeroconf.unpublishService('LuvLyrics');
+          this.zeroconf.unpublishService(this.deviceName);
         }
       } catch (error) {
         console.warn('[DesktopBridge] Failed to unpublish mDNS service:', error);
@@ -281,8 +502,10 @@ class DesktopBridgeService {
 
   // ── WebSocket server ──────────────────────────────────────────────────────
 
-  private startWsServer(tcpSocket: TcpSocketModule): void {
-    this.wsServer = tcpSocket.createServer((socket: any) => {
+  private startWsServer(tcpSocket: TcpSocketModule): Promise<void> {
+    return new Promise((resolve, reject) => {
+      let settled = false;
+      this.wsServer = tcpSocket.createServer((socket: any) => {
       const id = ++this.clientCounter;
       const client: WsClient = { socket, handshaken: false, buffer: Buffer.alloc(0) };
       this.clients.set(id, client);
@@ -299,31 +522,44 @@ class DesktopBridgeService {
           for (const msg of messages) {
             if (msg === '__CLOSE__') {
               this.clients.delete(id);
+              this.handleDesktopDisconnected('socket_close');
               socket.destroy();
               return;
             }
-            this.handleMessage(msg);
+            this.handleMessage(msg, id);
           }
         }
       });
 
       socket.on('close', () => {
         this.clients.delete(id);
+        this.handleDesktopDisconnected('socket_close');
         console.log('[DesktopBridge] Client disconnected:', id);
       });
 
       socket.on('error', () => {
         this.clients.delete(id);
+        this.handleDesktopDisconnected('network_loss');
       });
 
     });
 
-    this.wsServer.listen({ port: WS_PORT, host: '0.0.0.0' }, () => {
-      console.log('[DesktopBridge] WS server listening on', WS_PORT);
-    });
+      this.wsServer.on('error', (err: unknown) => {
+        if (!settled) {
+          settled = true;
+          reject(err);
+          return;
+        }
+        this.logServerError('WS', err);
+      });
 
-    this.wsServer.on('error', (err: Error) => {
-      console.error('[DesktopBridge] WS server error:', err.message);
+      this.wsServer.listen(WS_PORT, '0.0.0.0', () => {
+        if (!settled) {
+          settled = true;
+          resolve();
+        }
+        console.log('[DesktopBridge] WS server listening on', WS_PORT);
+      });
     });
   }
 
@@ -355,6 +591,7 @@ class DesktopBridgeService {
 
     const state = usePlayerStore.getState();
     this.sendToClient(client, this.buildStateMessage(state));
+    this.markDesktopConnected();
 
     console.log('[DesktopBridge] Handshake complete for client', id);
   }
@@ -383,8 +620,10 @@ class DesktopBridgeService {
 
   // ── HTTP file server ──────────────────────────────────────────────────────
 
-  private startHttpServer(tcpSocket: TcpSocketModule): void {
-    this.httpServer = tcpSocket.createServer((socket: any) => {
+  private startHttpServer(tcpSocket: TcpSocketModule): Promise<void> {
+    return new Promise((resolve, reject) => {
+      let settled = false;
+      this.httpServer = tcpSocket.createServer((socket: any) => {
       let buf = Buffer.alloc(0);
 
       socket.on('data', (data: Buffer) => {
@@ -394,7 +633,16 @@ class DesktopBridgeService {
 
         const firstLine = str.split('\r\n')[0];
         const method = firstLine.split(' ')[0];
-        const path = firstLine.split(' ')[1];
+        const rawPath = firstLine.split(' ')[1];
+        const [path, queryString = ''] = rawPath.split('?');
+        const queryParams: Record<string, string> = {};
+        if (queryString) {
+          for (const part of queryString.split('&')) {
+            if (!part) continue;
+            const [k, v = ''] = part.split('=');
+            queryParams[decodeURIComponent(k)] = decodeURIComponent(v);
+          }
+        }
 
         if (method !== 'GET') {
           socket.write('HTTP/1.1 405 Method Not Allowed\r\n\r\n');
@@ -403,7 +651,23 @@ class DesktopBridgeService {
         }
 
         if (path === '/ping') {
-          socket.write('HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nAccess-Control-Allow-Origin: *\r\n\r\npong');
+          const now = Date.now();
+          if (now - this.pingLogAt > 3000) {
+            this.pingLogAt = now;
+            console.log('[DesktopBridge] ping request');
+          }
+          const payload = JSON.stringify({
+            ok: true,
+            ip: this.lastKnownIp,
+            deviceName: this.deviceName,
+            deviceId: this.deviceId,
+            wsPort: WS_PORT,
+            httpPort: HTTP_PORT,
+            ts: now,
+          });
+          socket.write(
+            `HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: ${Buffer.byteLength(payload, 'utf8')}\r\nAccess-Control-Allow-Origin: *\r\nCache-Control: no-store\r\n\r\n${payload}`
+          );
           socket.destroy();
           return;
         }
@@ -422,13 +686,31 @@ class DesktopBridgeService {
         }
 
         if (path === '/cover') {
-          const coverUri = state.currentSong?.coverImageUri;
+          const requestedSongId = queryParams.songId;
+          const targetSong =
+            requestedSongId && state.playlistQueue
+              ? state.playlistQueue.find((s: any) => s.id === requestedSongId) ?? state.currentSong
+              : state.currentSong;
+          const coverUri = targetSong?.coverImageUri;
+          const etag = `"${targetSong?.id ?? 'none'}-${targetSong?.dateModified ?? 0}"`;
+          const currentSongId = state.currentSong?.id ?? null;
+          if (Date.now() - this.coverLogAt > 1200) {
+            this.coverLogAt = Date.now();
+            console.log(
+              '[DesktopBridge] cover resolution',
+              JSON.stringify({
+                requestedSongId,
+                resolvedSongId: targetSong?.id ?? null,
+                currentSongId,
+              })
+            );
+          }
           if (!coverUri) {
             socket.write('HTTP/1.1 404 Not Found\r\n\r\n');
             socket.destroy();
             return;
           }
-          this.serveFile(socket, coverUri, 'image/jpeg');
+          this.serveFile(socket, coverUri, 'image/jpeg', etag);
           return;
         }
 
@@ -439,16 +721,31 @@ class DesktopBridgeService {
       socket.on('error', () => socket.destroy());
     });
 
-    this.httpServer.listen({ port: HTTP_PORT, host: '0.0.0.0' }, () => {
-      console.log('[DesktopBridge] HTTP server listening on', HTTP_PORT);
-    });
+      this.httpServer.on('error', (err: unknown) => {
+        if (!settled) {
+          settled = true;
+          reject(err);
+          return;
+        }
+        this.logServerError('HTTP', err);
+      });
 
-    this.httpServer.on('error', (err: Error) => {
-      console.error('[DesktopBridge] HTTP server error:', err.message);
+      this.httpServer.listen(HTTP_PORT, '0.0.0.0', () => {
+        if (!settled) {
+          settled = true;
+          resolve();
+        }
+        console.log('[DesktopBridge] HTTP server listening on', HTTP_PORT);
+      });
     });
   }
 
-  private async serveFile(socket: any, fileUri: string, contentType: string): Promise<void> {
+  private async serveFile(
+    socket: any,
+    fileUri: string,
+    contentType: string,
+    etag?: string
+  ): Promise<void> {
     try {
       const FileSystem = require('expo-file-system');
       const info = await FileSystem.getInfoAsync(fileUri);
@@ -468,7 +765,8 @@ class DesktopBridgeService {
         `Content-Type: ${contentType}\r\n` +
         `Content-Length: ${bytes.length}\r\n` +
         `Access-Control-Allow-Origin: *\r\n` +
-        `Cache-Control: no-cache\r\n` +
+        `Cache-Control: no-store, max-age=0, must-revalidate\r\n` +
+        (etag ? `ETag: ${etag}\r\n` : '') +
         `\r\n`;
 
       socket.write(Buffer.from(headers, 'utf8'));
@@ -482,36 +780,104 @@ class DesktopBridgeService {
 
   // ── mDNS advertisement ───────────────────────────────────────────────────
 
-  private startMdns(): void {
+  private async getLocalIp(): Promise<string | null> {
+    const tcpSocket = loadTcpSocket();
+    if (!tcpSocket) return null;
+
+    return new Promise<string | null>((resolve) => {
+      const timer = setTimeout(() => resolve(null), 3000);
+      try {
+        // Connecting to a public IP forces the OS to route via WiFi, which
+        // sets localAddress on the socket — no data is actually sent.
+        const sock = (tcpSocket as any).createConnection(
+          { host: '8.8.8.8', port: 53, timeout: 2500 },
+          () => {
+            clearTimeout(timer);
+            const ip: string | undefined = sock.localAddress;
+            sock.destroy();
+            resolve(ip && ip !== '0.0.0.0' && ip !== '::' ? ip : null);
+          }
+        );
+        sock.on('error', () => { clearTimeout(timer); resolve(null); });
+        sock.on('timeout', () => { clearTimeout(timer); sock.destroy(); resolve(null); });
+      } catch {
+        clearTimeout(timer);
+        resolve(null);
+      }
+    });
+  }
+
+  private async refreshMdnsAdvertisement(reason: 'foreground' | 'ip_change' | 'restart'): Promise<void> {
+    if (!this.running) return;
+    await this.startMdns(reason);
+  }
+
+  private async startMdns(reason: 'foreground' | 'ip_change' | 'restart' = 'restart'): Promise<void> {
     try {
-      this.zeroconf = new Zeroconf();
-      this.zeroconf.on('published', (service: any) => {
-        console.log('[DesktopBridge] mDNS published:', service);
-      });
-      this.zeroconf.on('error', (error: Error) => {
-        console.error('[DesktopBridge] mDNS error:', error);
-      });
+      await this.ensureDeviceIdentity();
+      const localIp = await this.getLocalIp();
+      this.lastKnownIp = localIp;
+      if (localIp) {
+        console.log('[DesktopBridge] Local WiFi IP:', localIp);
+      } else {
+        console.warn('[DesktopBridge] Could not determine local IP; mDNS may not include address');
+      }
+
+      if (!this.zeroconf) {
+        this.zeroconf = new Zeroconf();
+        this.zeroconf.on('published', (service: any) => {
+          console.log('[DesktopBridge] mDNS published:', JSON.stringify(service));
+        });
+        this.zeroconf.on('error', (error: Error) => {
+          console.error('[DesktopBridge] mDNS error:', error);
+        });
+      }
+
+      const txt: Record<string, string> = {
+        ip: localIp ?? '',
+        name: this.deviceName,
+        deviceName: this.deviceName,
+        deviceId: this.deviceId ?? '',
+        app: 'luvlyrics',
+        proto: '1',
+      };
 
       const implType: ZeroconfImplType | undefined =
         Platform.OS === 'android' ? ImplType.DNSSD : undefined;
+
+      try {
+        if (Platform.OS === 'android') {
+          this.zeroconf.unpublishService(this.deviceName, ImplType.DNSSD);
+        } else {
+          this.zeroconf.unpublishService(this.deviceName);
+        }
+      } catch {
+        // ignore when no existing publication
+      }
 
       this.zeroconf.publishService(
         'luvlyrics',
         'tcp',
         'local.',
-        'LuvLyrics',
+        this.deviceName,
         WS_PORT,
-        {
-          version: '1',
-          wsPort: String(WS_PORT),
-          httpPort: String(HTTP_PORT),
-        },
+        txt,
         implType
       );
-      console.log(
-        '[DesktopBridge] Publishing mDNS service _luvlyrics._tcp.local on',
-        Platform.OS === 'android' ? `Android via ${ImplType.DNSSD}` : Platform.OS
-      );
+      if (Date.now() - this.mdnsPublishLogAt > 800) {
+        this.mdnsPublishLogAt = Date.now();
+        console.log(
+          '[DesktopBridge] mDNS publish payload',
+          JSON.stringify({
+            reason,
+            service: '_luvlyrics._tcp.local',
+            name: this.deviceName,
+            port: WS_PORT,
+            txtKeys: Object.keys(txt),
+            impl: Platform.OS === 'android' ? ImplType.DNSSD : Platform.OS,
+          })
+        );
+      }
     } catch (e) {
       console.warn('[DesktopBridge] mDNS not available (react-native-zeroconf not installed):', e);
     }
@@ -563,7 +929,7 @@ class DesktopBridgeService {
         duration: state.duration,
         isPlaying: state.isPlaying,
         volume: 0.8, // phone volume exposed as fixed for now; actual volume comes from AVPlayer
-        audioSource: 'phone',
+        audioSource: this.bridgeSource,
         queue: (state.playlistQueue ?? []).slice(0, 20).map((s: any) => ({
           id: s.id,
           title: s.title,
@@ -583,23 +949,36 @@ class DesktopBridgeService {
 
   // ── Command handler ──────────────────────────────────────────────────────
 
-  private handleMessage(raw: string): void {
+  private handleMessage(raw: string, _clientId?: number): void {
     try {
       const msg = JSON.parse(raw);
+      this.markDesktopHeartbeat();
+      if (msg.type === 'HEARTBEAT' || msg.action === 'HEARTBEAT') return;
       if (msg.type !== 'CMD') return;
 
       const settings = useDesktopBridgeSettingsStore.getState();
       if (!settings.desktopConnectEnabled) return;
 
       const playerStore = usePlayerStore.getState();
+      if (
+        msg.type === 'CMD' &&
+        (msg.action === 'PLAY' ||
+          msg.action === 'PAUSE' ||
+          msg.action === 'SEEK' ||
+          msg.action === 'SET_SOURCE')
+      ) {
+        console.log('[DesktopBridge] command receive', JSON.stringify({ action: msg.action }));
+      }
 
       switch (msg.action) {
         case 'PLAY':
-          playerStore.play();
+          this.desktopWasPlaying = true;
+          if (!playerStore.isPlaying) playerStore.play();
           break;
 
         case 'PAUSE':
-          playerStore.pause();
+          this.desktopWasPlaying = false;
+          if (playerStore.isPlaying) playerStore.pause();
           break;
 
         case 'NEXT':
@@ -612,6 +991,7 @@ class DesktopBridgeService {
 
         case 'SEEK':
           if (typeof msg.position === 'number') {
+            this.latestDesktopPosition = msg.position;
             playerStore.seekTo(msg.position);
           }
           break;
@@ -626,9 +1006,9 @@ class DesktopBridgeService {
           // 'phone'   = phone resumes playback
           // This is stored in a separate flag; the PlayerContext reads it
           if (msg.source === 'desktop') {
-            playerStore.pause();
+            this.transitionSource('desktop');
           } else {
-            playerStore.play();
+            this.transitionSource('phone', 'unload_signal');
           }
           break;
 
