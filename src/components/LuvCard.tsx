@@ -110,11 +110,11 @@ const HeartParticle = ({ angle, trigger }: { angle: number; trigger: number }) =
 
   const style = useAnimatedStyle(() => ({
     opacity: op.value,
-    transform: [{ translateX: tx.value }, { translateY: ty.value }, { scale: sc.value }],
+    transform: [{ translateX: tx.value, translateY: ty.value, scale: sc.value }] as any,
   }));
 
   return (
-    <Animated.View style={[styles.particle, style]} pointerEvents="none">
+    <Animated.View style={[{ position: 'absolute', width: 20, height: 20, justifyContent: 'center', alignItems: 'center' }, style]} pointerEvents="none">
       <Ionicons name="heart" size={13} color="#FF2D55" />
     </Animated.View>
   );
@@ -248,8 +248,8 @@ export const LuvCard = React.memo<LuvCardProps>(
       if (isPlaying && isActive) {
         glowSc.value = withRepeat(
           withSequence(
-            withTiming(1.22, { duration: 1500, easing: Easing.inOut(Easing.sine) }),
-            withTiming(1.0, { duration: 1500, easing: Easing.inOut(Easing.sine) })
+            withTiming(1.22, { duration: 1500, easing: Easing.inOut(Easing.sin) }),
+            withTiming(1.0, { duration: 1500, easing: Easing.inOut(Easing.sin) })
           ), -1, false
         );
         glowOp.value = withRepeat(
