@@ -122,7 +122,7 @@ class MainPlayerModule : Module() {
         }
 
         Function("destroy") {
-            val context = appContext.reactContext ?: return@Function
+            val context = appContext.reactContext ?: return@Function null
             val intent = Intent(context, PlaybackService::class.java)
             context.stopService(intent)
         }

@@ -7,6 +7,7 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
+import androidx.media3.session.SessionResult
 import com.lyricflow.app.modules.PlayerBridge
 
 class PlaybackService : MediaSessionService() {
@@ -66,11 +67,11 @@ class PlaybackService : MediaSessionService() {
         ): Int {
             if (playerCommand == Player.COMMAND_SEEK_TO_NEXT || playerCommand == Player.COMMAND_SEEK_TO_NEXT_MEDIA_ITEM) {
                 PlayerBridge.onRemoteCommand?.invoke("next")
-                return MediaSession.ConnectionResult.RESULT_SUCCESS
+                return SessionResult.RESULT_SUCCESS
             }
             if (playerCommand == Player.COMMAND_SEEK_TO_PREVIOUS || playerCommand == Player.COMMAND_SEEK_TO_PREVIOUS_MEDIA_ITEM) {
                 PlayerBridge.onRemoteCommand?.invoke("previous")
-                return MediaSession.ConnectionResult.RESULT_SUCCESS
+                return SessionResult.RESULT_SUCCESS
             }
             return super.onPlayerCommandRequest(session, controller, playerCommand)
         }
