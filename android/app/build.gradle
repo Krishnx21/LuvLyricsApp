@@ -192,3 +192,59 @@ dependencies {
         implementation jscFlavor
     }
 }
+
+// ---------------------------------------------------------------------------
+// Suppress :expo's autolinking-generated ExpoModulesPackageList so our app's
+// ExpoModulesPackageList.kt is the only compiled version at runtime.
+//
+// The modern expo-autolinking plugin injects its own ExpoModulesPackageList.java
+// into :expo's source set via AndroidComponentsExtension.finalizeDsl (which runs
+// AFTER gradle.afterProject). That generated class wins the classloader race
+// and our custom native modules (Startup, MainPlayer, VoiceInput, etc.) never
+// get registered. Our manual ExpoModulesPackageList.kt already mirrors every
+// standard Expo module in :expo's generated file, so suppressing :expo's copy
+// is safe.
+//
+// IMPORTANT: After adding this block you MUST run `./gradlew clean` once to
+// clear stale library DEX caches from previous builds. After that, incremental
+// builds work correctly because the suppression task removes the generated
+// file before :expo ever compiles it.
+// ---------------------------------------------------------------------------
+task suppressExpoModulesPackageList {
+    doLast {
+        def generatedFile = file("${rootDir}/../node_modules/expo/android/build/generated/expo/src/main/java/expo/modules/ExpoModulesPackageList.java")
+        if (generatedFile.exists()) {
+            generatedFile.delete()
+            println "[suppressExpoModulesPackageList] Deleted :expo's generated ExpoModulesPackageList.java"
+        }
+
+        // Delete stale compiled .class files from :expo's build output so they
+        // don't get packaged into the APK from a previous incremental build.
+        fileTree(dir: "${rootDir}/../node_modules/expo/android/build", include: '**/ExpoModulesPackageList.class').each { f ->
+            f.delete()
+        }
+
+        // Also delete stale JAR / AAR intermediates that may have cached the old
+        // class from a prior build.
+        fileTree(dir: "${rootDir}/../node_modules/expo/android/build/intermediates", include: '**/ExpoModulesPackageList.class').each { f ->
+            f.delete()
+        }
+        fileTree(dir: "${rootDir}/../node_modules/expo/android/build/intermediates", include: '**/ExpoModulesPackageList.java').each { f ->
+            f.delete()
+        }
+
+        // Delete stale library DEX files in the app's build that came from :expo
+        // before the suppression was in place.
+        fileTree(dir: "${buildDir}/intermediates/dex/debug/mergeLibDexDebug", include: '**/ExpoModulesPackageList.class').each { f ->
+            f.delete()
+        }
+    }
+}
+
+// Wire suppression to run after generation but before compilation.
+project(':expo').tasks.matching { it.name == "generatePackagesList" }.all { task ->
+    task.finalizedBy suppressExpoModulesPackageList
+}
+project(':expo').tasks.matching { it.name.contains("compileDebug") || it.name.contains("compileRelease") }.all { task ->
+    task.dependsOn suppressExpoModulesPackageList
+}
