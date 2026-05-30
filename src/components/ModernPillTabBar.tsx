@@ -1,6 +1,7 @@
 /**
  * LyricFlow - Premium pill-shaped navigation bar
  * Matches Dynamic Island aesthetic with live song color theming
+ * Center mic button bulges above the pill.
  */
 
 import React from 'react';
@@ -11,6 +12,9 @@ import { BlurView } from 'expo-blur';
 import { usePlayerStore } from '../store/playerStore';
 import { useSettingsStore } from '../store/settingsStore';
 import { useThemeColors, useIsDark } from '../contexts/ThemeContext';
+import { VoiceMicButton } from './VoiceMicButton';
+
+const MIC_WRAPPER_SIZE = 56;
 
 export const ModernPillTabBar: React.FC<BottomTabBarProps> = ({
   state,
@@ -40,8 +44,58 @@ export const ModernPillTabBar: React.FC<BottomTabBarProps> = ({
     : ['rgba(255,255,255,0.1)', 'rgba(248,248,252,0.5)'];
   const borderColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)';
 
+  // Split routes: left half and right half (mic occupies center slot)
+  const midpoint = Math.ceil(state.routes.length / 2);
+  const leftRoutes = state.routes.slice(0, midpoint);
+  const rightRoutes = state.routes.slice(midpoint);
+
+  const renderTab = (route: typeof state.routes[0], index: number, offset = 0) => {
+    const { options } = descriptors[route.key];
+    const isFocused = state.index === index + offset;
+
+    const onPress = async () => {
+      const event = navigation.emit({
+        type: 'tabPress',
+        target: route.key,
+        canPreventDefault: true,
+      });
+
+      if (!isFocused && !event.defaultPrevented) {
+        navigation.navigate(route.name, route.params);
+
+        if (route.name === 'Luvs') {
+          const { feedSongs } = (await import('../store/luvsFeedStore')).useLuvsFeedStore.getState();
+          if (feedSongs.length === 0) {
+            import('../services/LuvsRecommendationEngine')
+              .then(m => m.luvsRecommendationEngine.refreshRecommendation())
+              .catch(console.error);
+          }
+        }
+      } else if (isFocused && route.name === 'Luvs') {
+        import('../services/LuvsRecommendationEngine')
+          .then(m => m.luvsRecommendationEngine.refreshRecommendation())
+          .catch(console.error);
+      }
+    };
+
+    return (
+      <Pressable
+        key={route.key}
+        onPress={onPress}
+        style={styles.tabItem}
+      >
+        {options.tabBarIcon?.({
+          focused: isFocused,
+          color: isFocused ? activeIconColor : inactiveIconColor,
+          size: 24,
+        })}
+      </Pressable>
+    );
+  };
+
   return (
-    <View style={styles.container}>
+    <View style={styles.container} pointerEvents="box-none">
+      {/* Pill */}
       <View style={[styles.pillContainer, { backgroundColor: pillBg, borderColor }]}>
         {/* Dynamic Background */}
         <View style={StyleSheet.absoluteFill}>
@@ -56,54 +110,29 @@ export const ModernPillTabBar: React.FC<BottomTabBarProps> = ({
           ) : (
             <View style={[StyleSheet.absoluteFill, { backgroundColor: fallbackBg }]} />
           )}
-
           <LinearGradient colors={gradientColors} style={StyleSheet.absoluteFill} />
         </View>
 
         <BlurView intensity={60} tint={isDark ? 'dark' : 'light'} style={styles.blur}>
           <View style={styles.tabsRow}>
-            {state.routes.map((route, index) => {
-              const { options } = descriptors[route.key];
-              const isFocused = state.index === index;
+            {/* Left tabs */}
+            <View style={styles.tabGroup}>
+              {leftRoutes.map((route, i) => renderTab(route, i, 0))}
+            </View>
 
-              const onPress = async () => {
-                const event = navigation.emit({
-                  type: 'tabPress',
-                  target: route.key,
-                  canPreventDefault: true,
-                });
+            {/* Center mic button — inline inside the pill */}
+            <View style={styles.centerSlot}>
+              <VoiceMicButton variant="inline" />
+            </View>
 
-                if (!isFocused && !event.defaultPrevented) {
-                  navigation.navigate(route.name, route.params);
-
-                  if (route.name === 'Luvs') {
-                    const { feedSongs } = (await import('../store/luvsFeedStore')).useLuvsFeedStore.getState();
-                    if (feedSongs.length === 0) {
-                      import('../services/LuvsRecommendationEngine').then(m => m.luvsRecommendationEngine.refreshRecommendation()).catch(console.error);
-                    }
-                  }
-                } else if (isFocused && route.name === 'Luvs') {
-                  import('../services/LuvsRecommendationEngine').then(m => m.luvsRecommendationEngine.refreshRecommendation()).catch(console.error);
-                }
-              };
-
-              return (
-                <Pressable
-                  key={route.key}
-                  onPress={onPress}
-                  style={styles.tabItem}
-                >
-                  {options.tabBarIcon?.({
-                    focused: isFocused,
-                    color: isFocused ? activeIconColor : inactiveIconColor,
-                    size: 24,
-                  })}
-                </Pressable>
-              );
-            })}
+            {/* Right tabs */}
+            <View style={styles.tabGroup}>
+              {rightRoutes.map((route, i) => renderTab(route, i, midpoint))}
+            </View>
           </View>
         </BlurView>
       </View>
+
     </View>
   );
 };
@@ -111,13 +140,10 @@ export const ModernPillTabBar: React.FC<BottomTabBarProps> = ({
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
-    bottom: 0,
+    bottom: Platform.OS === 'ios' ? 12 : 8,
     left: 0,
     right: 0,
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingBottom: Platform.OS === 'ios' ? 12 : 8,
-    pointerEvents: 'box-none',
   },
   pillContainer: {
     width: '85%',
@@ -137,19 +163,29 @@ const styles = StyleSheet.create({
   tabsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-around',
+    justifyContent: 'space-between',
     paddingVertical: 12,
     paddingHorizontal: 8,
   },
-  tabItem: {
+  tabGroup: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-around',
+  },
+  // Center slot for inline mic button
+  centerSlot: {
+    width: MIC_WRAPPER_SIZE,
+    alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
-    paddingHorizontal: 16,
+  },
+  tabItem: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 20,
-    minWidth: 56,
+    minWidth: 48,
   },
 });
 

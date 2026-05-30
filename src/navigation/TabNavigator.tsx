@@ -5,6 +5,7 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { TabParamList } from '../types/navigation';
 import { ModernPillTabBar } from '../components/ModernPillTabBar';
+import { CustomTabBar } from '../components/CustomTabBar';
 import { useSettingsStore } from '../store/settingsStore';
 import { useThemeColors, useIsDark } from '../contexts/ThemeContext';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
@@ -46,6 +47,7 @@ const SettingsIcon = ({ color, focused }: { color: string; focused: boolean }) =
 );
 
 const renderModernPillTabBar = (props: BottomTabBarProps) => <ModernPillTabBar {...props} />;
+const renderCustomTabBar = (props: BottomTabBarProps) => <CustomTabBar {...props} />;
 
 export const TabNavigator: React.FC = () => {
   const colors = useThemeColors();
@@ -67,14 +69,12 @@ export const TabNavigator: React.FC = () => {
   return (
     <Tab.Navigator
       id="MainTabs"
-      tabBar={navBarStyle === 'modern-pill' ? renderModernPillTabBar : undefined}
+      tabBar={navBarStyle === 'modern-pill' ? renderModernPillTabBar : renderCustomTabBar}
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: activeTint,
         tabBarInactiveTintColor: inactiveTint,
         tabBarShowLabel: navBarStyle === 'classic',
-        tabBarStyle: navBarStyle === 'classic' ? styles.tabBar : undefined,
-        tabBarBackground: navBarStyle === 'classic' ? TabBarBackground : undefined,
       }}
     >
       <Tab.Screen name="Home" component={LibraryScreen} options={{ tabBarLabel: 'Home', tabBarIcon: HomeIcon }} />

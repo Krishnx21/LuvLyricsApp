@@ -22,6 +22,8 @@ export type RootStackParamList = {
     audioFormat?: string;
     thumbnail?: string;
     lengthSeconds?: number;
+    voiceQuery?: string;
+    autoDownload?: boolean;
   } | undefined;
   YoutubeBrowser: undefined;
   LuvsVault: undefined; // Luvs liked songs vault

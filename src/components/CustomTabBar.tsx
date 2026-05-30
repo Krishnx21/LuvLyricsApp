@@ -1,113 +1,112 @@
 /**
- * LyricFlow - Custom Tab Bar
- * Dynamic Island style with glassmorphism
+ * LyricFlow - Custom Tab Bar (Classic Style)
+ * Simple bottom bar with inline mic button.
  */
 
 import React from 'react';
-import { View, Pressable, StyleSheet } from 'react-native';
+import { View, Pressable, StyleSheet, Platform } from 'react-native';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
-import { Ionicons } from '@expo/vector-icons';
-import { BlurView } from 'expo-blur';
-import { LinearGradient } from 'expo-linear-gradient';
+import { VoiceMicButton } from './VoiceMicButton';
 
-export const CustomTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) => {
+const MIC_WRAPPER_SIZE = 56;
+
+export const CustomTabBar: React.FC<BottomTabBarProps> = ({
+  state,
+  descriptors,
+  navigation,
+}) => {
+  const midpoint = Math.ceil(state.routes.length / 2);
+  const leftRoutes = state.routes.slice(0, midpoint);
+  const rightRoutes = state.routes.slice(midpoint);
+
+  const renderTab = (route: typeof state.routes[0], index: number, offset = 0) => {
+    const { options } = descriptors[route.key];
+    const isFocused = state.index === index + offset;
+
+    const onPress = () => {
+      const event = navigation.emit({
+        type: 'tabPress',
+        target: route.key,
+        canPreventDefault: true,
+      });
+      if (!isFocused && !event.defaultPrevented) {
+        navigation.navigate(route.name, route.params);
+      }
+    };
+
+    return (
+      <Pressable key={route.key} onPress={onPress} style={styles.tab}>
+        {options.tabBarIcon?.({
+          focused: isFocused,
+          color: isFocused ? '#fff' : 'rgba(255,255,255,0.5)',
+          size: 24,
+        })}
+      </Pressable>
+    );
+  };
+
   return (
-    <View style={styles.container}>
-      <LinearGradient
-        colors={['rgba(120,120,128,0.2)', 'rgba(120,120,128,0.1)']}
-        style={styles.gradient}
-      >
-        <BlurView intensity={80} tint="dark" style={styles.blur}>
-          <View style={styles.tabBar}>
-            {state.routes.map((route, index) => {
-              const isFocused = state.index === index;
-
-              const onPress = () => {
-                const event = navigation.emit({
-                  type: 'tabPress',
-                  target: route.key,
-                  canPreventDefault: true,
-                });
-
-                if (!isFocused && !event.defaultPrevented) {
-                  navigation.navigate(route.name);
-                }
-              };
-
-              let iconName: keyof typeof Ionicons.glyphMap = 'home';
-              if (route.name === 'Library') iconName = 'home';
-              if (route.name === 'Search') iconName = 'search';
-              if (route.name === 'Settings') iconName = 'settings';
-
-              return (
-                <Pressable
-                  key={route.key}
-                  onPress={onPress}
-                  style={styles.tab}
-                >
-                  <View style={[styles.iconContainer, isFocused && styles.iconContainerActive]}>
-                    <Ionicons
-                      name={iconName}
-                      size={24}
-                      color={isFocused ? '#fff' : 'rgba(255,255,255,0.5)'}
-                    />
-                  </View>
-                </Pressable>
-              );
-            })}
+    <View style={styles.outerContainer} pointerEvents="box-none">
+      <View style={styles.container}>
+        <View style={styles.tabBar}>
+          {/* Left tabs */}
+          <View style={styles.tabGroup}>
+            {leftRoutes.map((r, i) => renderTab(r, i, 0))}
           </View>
-        </BlurView>
-      </LinearGradient>
+
+          {/* Center mic button — inline, inside the bar */}
+          <View style={styles.micSlot}>
+            <VoiceMicButton variant="inline" />
+          </View>
+
+          {/* Right tabs */}
+          <View style={styles.tabGroup}>
+            {rightRoutes.map((r, i) => renderTab(r, i, midpoint))}
+          </View>
+        </View>
+      </View>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
+  outerContainer: {
     position: 'absolute',
-    bottom: 20,
-    left: 40,
-    right: 40,
+    bottom: Platform.OS === 'ios' ? 12 : 8,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    pointerEvents: 'box-none',
+  },
+  container: {
+    width: '100%',
     height: 64,
-    borderRadius: 32,
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.4,
-    shadowRadius: 16,
-    elevation: 12,
-  },
-  gradient: {
-    flex: 1,
-    borderRadius: 32,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.15)',
-  },
-  blur: {
-    flex: 1,
-    borderRadius: 32,
+    backgroundColor: '#0A0A0C',
+    borderTopWidth: 0,
   },
   tabBar: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 12,
+  },
+  tabGroup: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-around',
-    paddingHorizontal: 20,
   },
   tab: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    height: '100%',
   },
-  iconContainer: {
-    width: 48,
-    height: 48,
+  micSlot: {
+    width: MIC_WRAPPER_SIZE,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 24,
-  },
-  iconContainerActive: {
-    backgroundColor: 'rgba(255,255,255,0.15)',
   },
 });
 

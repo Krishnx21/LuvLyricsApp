@@ -28,6 +28,7 @@ interface SettingsState {
   playInMiniPlayerOnly: boolean;
   miniPlayerStyle: 'bar' | 'island'; // New setting
   navBarStyle: 'classic' | 'modern-pill'; // NEW: Navbar style
+  voiceMode: 'hold' | 'tap';
   autoHideControls: boolean; // Toggle for hiding controls after 3.5s
   libraryBackgroundMode: 'daily' | 'aurora' | 'current' | 'black' | 'grey' | 'theme-blue' | 'purest-black' | 'theme-subtle';
   islandBgMode: 'album-art' | 'song-gradient' | 'aurora' | 'purest-black' | 'grey' | 'theme-subtle' | 'theme-blue';
@@ -60,6 +61,7 @@ interface SettingsState {
   setPlayInMiniPlayerOnly: (enabled: boolean) => void;
   setMiniPlayerStyle: (style: 'bar' | 'island') => void; // New action
   setNavBarStyle: (style: 'classic' | 'modern-pill') => void; // NEW: Navbar action
+  setVoiceMode: (mode: 'hold' | 'tap') => void;
   setAutoHideControls: (enabled: boolean) => void;
   setLibraryBackgroundMode: (mode: 'daily' | 'aurora' | 'current' | 'black' | 'grey' | 'theme-blue' | 'purest-black' | 'theme-subtle') => void;
   setIslandBgMode: (mode: 'album-art' | 'song-gradient' | 'aurora' | 'purest-black' | 'grey' | 'theme-subtle' | 'theme-blue') => void;
@@ -99,6 +101,7 @@ const DEFAULT_SETTINGS = {
   playInMiniPlayerOnly: false,
   miniPlayerStyle: 'island' as const, // Default to island as requested "like it was before"
   navBarStyle: 'modern-pill' as const, // Default to modern pill navbar
+  voiceMode: 'tap' as const,
   autoHideControls: true, // Default enabled
   libraryBackgroundMode: 'daily' as const,
   islandBgMode: 'album-art' as const,
@@ -135,6 +138,7 @@ export const useSettingsStore = create<SettingsState>()(
       setPlayInMiniPlayerOnly: (playInMiniPlayerOnly) => set({ playInMiniPlayerOnly }),
       setMiniPlayerStyle: (miniPlayerStyle) => set({ miniPlayerStyle }),
       setNavBarStyle: (navBarStyle) => set({ navBarStyle }),
+      setVoiceMode: (voiceMode) => set({ voiceMode }),
       setAutoHideControls: (autoHideControls) => set({ autoHideControls }),
       setLibraryBackgroundMode: (libraryBackgroundMode) => set({ libraryBackgroundMode }),
       setIslandBgMode: (islandBgMode) => set({ islandBgMode }),
