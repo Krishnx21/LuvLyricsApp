@@ -96,7 +96,9 @@ class DownloadWorker(context: Context, params: WorkerParameters) : CoroutineWork
                 conn.readTimeout = 60000
                 conn.instanceFollowRedirects = false
                 conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Linux; Android 12; SM-M315F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36")
-                conn.setRequestProperty("Accept", "*/*")
+                conn.setRequestProperty("Accept", "audio/*, */*")
+                conn.setRequestProperty("Accept-Language", "en-US,en;q=0.9")
+                conn.setRequestProperty("Referer", "https://www.jiosaavn.com/")
                 conn.connect()
 
                 val code = conn.responseCode
