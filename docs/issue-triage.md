@@ -75,6 +75,30 @@ Avoid discussing sensitive vulnerabilities publicly. Follow `SECURITY.md`.
 
 ---
 
+## gssoc-l1
+
+GSSoC 2026 task worth **10 points**.
+
+Suitable for: docs, tests for already-written code, small UI/copy fixes, lint or typecheck cleanup.
+
+---
+
+## gssoc-l2
+
+GSSoC 2026 task worth **25 points**.
+
+Suitable for: new features, adding lyrics providers, UI screen improvements, moderate refactors that touch one store or service.
+
+---
+
+## gssoc-l3
+
+GSSoC 2026 task worth **45 points**.
+
+Suitable for: native Kotlin module changes, player engine or seek logic, SQLite schema migrations, changes that span multiple Zustand stores.
+
+---
+
 ## good first issue
 Beginner-friendly tasks suitable for first-time contributors.
 

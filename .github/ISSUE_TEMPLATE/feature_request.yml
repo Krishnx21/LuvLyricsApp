@@ -3,6 +3,7 @@ description: Propose a new feature or enhancement
 title: "[Feature]: "
 labels:
   - enhancement
+  - gssoc
 body:
   - type: markdown
     attributes:

@@ -30,6 +30,7 @@ Briefly describe what this PR changes and why.
 ## Testing
 
 - [ ] `npm run lint`
+- [ ] `npm run typecheck`
 - [ ] Manual testing completed
 - [ ] Relevant test cases added/updated (if applicable)
 
@@ -45,3 +46,4 @@ Add screenshots or short recordings here.
 - [ ] I followed existing code style and project structure
 - [ ] I updated docs where needed
 - [ ] I did not commit secrets or sensitive credentials
+- [ ] GSSoC: this PR closes the issue I was assigned (uncheck if not a GSSoC contribution)

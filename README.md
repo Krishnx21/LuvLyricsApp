@@ -19,7 +19,7 @@
 ## 📖 Table of Contents
 
 - [About](#-about)
-- [GSSoC — Contribute & Earn Points](#-girlscript-summer-of-code-gssoc-2025)
+- [GSSoC — Contribute & Earn Points](#-girlscript-summer-of-code-gssoc-2026)
 - [Features](#-features)
 - [Tech Stack](#-tech-stack)
 - [Architecture](#-architecture)
@@ -58,7 +58,7 @@ Recent highlights:
 
 ---
 
-## 🌸 GirlScript Summer of Code (GSSoC) 2025
+## 🌸 GirlScript Summer of Code (GSSoC) 2026
 
 <div align="center">
 
@@ -73,10 +73,18 @@ _Contribute to a real production app. Earn GSSoC leaderboard points. Build your 
 | Step | Action |
 | --- | --- |
 | 1 | Visit the [LuvLyrics GSSoC project page](https://gssoc.girlscript.org/projects/luvlyrics%2Fluvlyricsapp) to register your interest |
-| 2 | Browse [open issues](https://github.com/LuvLyricsApp/LuvLyricsApp/issues) — filter by `gssoc`, `good first issue`, or `help wanted` |
-| 3 | Comment on the issue you want to tackle and wait for a maintainer to assign it to you |
+| 2 | Browse [open issues](https://github.com/LuvLyricsApp/LuvLyricsApp/issues) — filter by [`gssoc`](https://github.com/LuvLyricsApp/LuvLyricsApp/issues?q=label%3Agssoc), `good first issue`, or `help wanted` |
+| 3 | Comment on the issue you want to tackle and **wait for a maintainer to assign it to you** before writing any code |
 | 4 | Fork the repo, create a branch, make your changes, and open a PR linked to the issue |
 | 5 | Once your PR is reviewed and merged, your GSSoC points are automatically credited |
+
+### Point levels
+
+| Label | Points | What fits |
+| --- | --- | --- |
+| `gssoc-l1` | 10 pts | Docs, tests for existing code, small UI/copy fixes |
+| `gssoc-l2` | 25 pts | New features, lyrics providers, UI screen improvements, moderate refactors |
+| `gssoc-l3` | 45 pts | Native Kotlin modules, player engine changes, SQLite migrations, multi-store work |
 
 > **What is GSSoC?** GirlScript Summer of Code is a free, open-source program by GirlScript Foundation. It is open to everyone — regardless of gender, background, or country — and is a great way to make real contributions to production projects while getting recognized for it.
 
@@ -113,8 +121,7 @@ _Contribute to a real production app. Earn GSSoC leaderboard points. Build your 
 | **State** | Zustand |
 | **Database** | SQLite via `expo-sqlite` |
 | **Lists** | `@shopify/flash-list` |
-| **Audio (Android)** | Media3 ExoPlayer + MediaSessionService (Kotlin native module) |
-| **Audio (iOS/fallback)** | `expo-av` |
+| **Audio** | Media3 ExoPlayer + MediaSessionService (Kotlin native module) |
 | **Downloads** | WorkManager `CoroutineWorker` (Kotlin native module) |
 | **Native modules** | Expo Modules API (Kotlin) — StartupModule, MainPlayerModule, LuvsPlayerModule, DownloaderModule |
 | **Networking** | `react-native-tcp-socket`, `react-native-zeroconf` |
@@ -178,7 +185,6 @@ Install these before starting:
 - npm
 - Git
 - Android Studio (for Android builds)
-- Xcode (for iOS builds — macOS only)
 
 ---
 
@@ -221,12 +227,6 @@ npm start
 
 ```bash
 npm run android
-```
-
-**7. Run on iOS:**
-
-```bash
-npm run ios
 ```
 
 ---
@@ -282,7 +282,7 @@ Please keep PRs focused and linked to an issue.
 **Recommended workflow:**
 
 1. Pick or open an issue.
-2. Create a branch from `main` — name it `fix/<issue>-short-description` or `feat/short-description`.
+2. Create a branch from `main` — name it `fix/<issue-number>-short-description` or `feat/short-description`.
 3. Make the smallest useful change.
 4. Add or update tests when behavior changes.
 5. Run `npm run ci`.
@@ -291,7 +291,7 @@ Please keep PRs focused and linked to an issue.
 Good places to start:
 
 - [Open issues](https://github.com/LuvLyricsApp/LuvLyricsApp/issues)
-- Issues labeled [`good first issue`](https://github.com/LuvLyricsApp/LuvLyricsApp/issues?q=label%3A%22good+first+issue%22) or [`help wanted`](https://github.com/LuvLyricsApp/LuvLyricsApp/issues?q=label%3A%22help+wanted%22)
+- Issues labeled [`gssoc`](https://github.com/LuvLyricsApp/LuvLyricsApp/issues?q=label%3Agssoc), [`good first issue`](https://github.com/LuvLyricsApp/LuvLyricsApp/issues?q=label%3A%22good+first+issue%22), or [`help wanted`](https://github.com/LuvLyricsApp/LuvLyricsApp/issues?q=label%3A%22help+wanted%22)
 - [CONTRIBUTING.md](./CONTRIBUTING.md) — full contributor guide
 - [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md) — community standards
 

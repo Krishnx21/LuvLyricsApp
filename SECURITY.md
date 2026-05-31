@@ -10,14 +10,14 @@ Please do not open public GitHub issues for security vulnerabilities.
 
 Instead:
 
-1. Open a private security advisory in GitHub Security tab (preferred), or
-2. Contact the maintainers privately with:
+1. Open a private security advisory in the GitHub Security tab (preferred), or
+2. Email [contactluvlyricsapp@gmail.com](mailto:contactluvlyricsapp@gmail.com) with:
    - Summary of the issue
    - Steps to reproduce
    - Impact assessment
    - Suggested fix (if available)
 
-We will acknowledge receipt as soon as possible and work on a fix responsibly.
+We aim to acknowledge within 48 hours and provide a status update within 7 days.
 
 ## Sensitive Data Rules
 

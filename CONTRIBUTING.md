@@ -8,6 +8,26 @@ This guide helps you set up quickly and submit high-quality pull requests.
 By participating, you agree to follow our Code of Conduct:
 [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md)
 
+## GSSoC 2026 Contributors
+
+LuvLyrics is an official GSSoC 2026 project.
+
+**Assignment rule:** Comment on the issue you want to work on and wait for a
+maintainer to assign it before writing any code. Unassigned PRs will not earn
+GSSoC points and may be closed without review.
+
+### Point levels
+
+| Label | Points | What fits |
+| --- | --- | --- |
+| `gssoc-l1` | 10 pts | Docs, tests for existing code, small UI/copy fixes |
+| `gssoc-l2` | 25 pts | New features, lyrics providers, UI improvements, moderate refactors |
+| `gssoc-l3` | 45 pts | Native Kotlin modules, player engine, SQLite migrations, multi-store work |
+
+Browse GSSoC-eligible issues: [`gssoc` label](https://github.com/LuvLyricsApp/LuvLyricsApp/issues?q=label%3Agssoc)
+
+---
+
 ## Ways to Contribute
 
 - Report bugs
@@ -31,7 +51,13 @@ cd LuvLyricsApp
 npm install
 ```
 
-### 3. Start the app
+### 3. Set up Android Studio
+
+Install [Android Studio](https://developer.android.com/studio) and ensure the
+Android SDK and an emulator (or physical device) are configured. Run
+`npx expo-doctor` after setup to verify your environment is ready.
+
+### 4. Start the app
 
 ```bash
 npm start
@@ -43,7 +69,7 @@ Run on Android:
 npm run android
 ```
 
-> **Note:** LuvLyrics targets Android only. iOS builds are not supported at this time.
+> **Note:** LuvLyrics targets Android only. iOS builds are not supported.
 
 ## Troubleshooting
 
@@ -92,7 +118,7 @@ the platform setup notes in `README.md`.
 Use clear, scoped branch names:
 
 - `feat/<short-description>`
-- `fix/<short-description>`
+- `fix/<issue-number>-short-description`
 - `docs/<short-description>`
 - `refactor/<short-description>`
 - `test/<short-description>`
@@ -100,7 +126,7 @@ Use clear, scoped branch names:
 Examples:
 
 - `feat/persistent-queue-sqlite`
-- `fix/webview-lyrics-copy-fallback`
+- `fix/85-magic-number-comments`
 
 ## Commit Message Style
 
@@ -116,7 +142,7 @@ Prefer conventional commits:
 > If no issue exists yet, open one first and wait for a maintainer to confirm it's in scope before starting work.
 
 1. Open or find an issue — get it confirmed before writing code
-2. Create a focused branch from `main` following the branch naming convention below
+2. Create a focused branch from `main` following the branch naming convention above
 3. Keep PR scope small — one issue per PR
 4. Add/update tests where relevant
 5. Run CI checks locally before pushing:
@@ -153,11 +179,18 @@ PRs should stay red until these checks pass. Maintainers can then enable branch 
 
 ## Issue Labels
 
-Recommended labels:
-
-- `good first issue` for beginner-friendly tasks
-- `help wanted` for open contributions
-- `bug`, `enhancement`, `documentation`, `performance`, `security`
+| Label | Purpose |
+| --- | --- |
+| `gssoc-l1` | GSSoC task — 10 pts |
+| `gssoc-l2` | GSSoC task — 25 pts |
+| `gssoc-l3` | GSSoC task — 45 pts |
+| `good first issue` | Beginner-friendly, minimal context needed |
+| `help wanted` | Open for community contributions |
+| `bug` | Something is broken |
+| `enhancement` | New feature or improvement |
+| `documentation` | Docs-only change |
+| `performance` | Speed or memory improvement |
+| `security` | Security-related change |
 
 For the full issue review process, see the [Issue Triage Guide](docs/issue-triage.md).
 
@@ -173,7 +206,8 @@ For the full issue review process, see the [Issue Triage Guide](docs/issue-triag
 
 ## Need Help?
 
-- Use GitHub Discussions for questions
-- Use Issues for actionable bugs/features
+- **Discord**: [Join our community](https://discord.gg/VeR3hAfUn) — fastest way to reach maintainers
+- **GitHub Discussions**: for questions and idea brainstorming
+- **Issues**: for actionable bugs and features only
 
 Thank you for helping improve LuvLyrics.
