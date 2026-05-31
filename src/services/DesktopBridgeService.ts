@@ -563,7 +563,6 @@ class DesktopBridgeService {
         desktopDeviceId: null,
       };
       this.clients.set(id, client);
-      
 
       socket.on('data', (data: Buffer) => {
         client.buffer = Buffer.concat([client.buffer, data]);
@@ -645,8 +644,6 @@ class DesktopBridgeService {
 
     this.sendPresenceToClient(client);
     this.markDesktopConnected();
-
-    
   }
 
   private sendToClient(client: WsClient, msg: string): void {

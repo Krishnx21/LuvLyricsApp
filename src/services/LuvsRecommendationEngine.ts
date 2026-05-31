@@ -34,7 +34,6 @@ class LuvsRecommendationEngine {
       this.seededFromLibrary = true;
       return;
     }
-
     // Check if we need to re-seed: library has more songs than seeded interactions
     // This handles the case where old vault data was seeded but library wasn't
     
