@@ -37,17 +37,13 @@ npm install
 npm start
 ```
 
-For Android:
+Run on Android:
 
 ```bash
 npm run android
 ```
 
-For iOS:
-
-```bash
-npm run ios
-```
+> **Note:** LuvLyrics targets Android only. iOS builds are not supported at this time.
 
 ## Troubleshooting
 
@@ -88,7 +84,7 @@ npm run test:ci
 ```
 
 Docs-only work, linting, typechecking, and unit tests usually do not require
-Firebase or Google credentials. If Android, iOS, or emulator setup fails, check
+Firebase or Google credentials. If Android or emulator setup fails, check
 the platform setup notes in `README.md`.
 
 ## Branch Naming
