@@ -47,14 +47,6 @@ export const AudioDownloaderScreen: React.FC<AudioDownloaderProps> = ({ navigati
         setMiniPlayerHidden(true);
         return () => {
             setMiniPlayerHidden(false);
-            // Cancel and clear all in-progress downloads when leaving the screen
-            const { queue, pauseItem, removeItem } = useDownloadQueueStore.getState();
-            queue
-                .filter(item => ['pending', 'staging', 'downloading'].includes(item.status))
-                .forEach(item => {
-                    pauseItem(item.id);   // cancels native download
-                    removeItem(item.id);  // clears from queue
-                });
         };
     }, [setMiniPlayerHidden]);
 
