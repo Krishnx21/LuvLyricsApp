@@ -1,0 +1,779 @@
+# Instincts generated from https://github.com/LuvLyricsApp/LuvLyricsApp
+# Generated: 2026-06-02T20:20:09.504Z
+# Version: 2.0
+# NOTE: This file supplements (does not replace) any existing curated instincts.
+# High-confidence manually curated instincts should be preserved alongside these.
+
+---
+id: LuvLyricsApp-commit-conventional
+trigger: "when writing a commit message"
+confidence: 0.85
+domain: git
+source: repo-analysis
+source_repo: https://github.com/LuvLyricsApp/LuvLyricsApp
+---
+
+# LuvLyricsApp Commit Conventional
+
+## Action
+
+Use conventional commit format with prefixes: fix, feat, docs, chore, refactor
+
+## Evidence
+
+- 139 commits analyzed
+- Detected conventional commit pattern
+- Examples: refactor: wrap inline handlers in useCallback for stable function refs, fix(accessibility): add accessibilityLabel and accessibilityRole to SettingsScreen interactive rows (closes #86)
+
+---
+id: LuvLyricsApp-commit-length
+trigger: "when writing a commit message"
+confidence: 0.6
+domain: git
+source: repo-analysis
+source_repo: https://github.com/LuvLyricsApp/LuvLyricsApp
+---
+
+# LuvLyricsApp Commit Length
+
+## Action
+
+Write moderate-length commit messages (~63 characters)
+
+## Evidence
+
+- Average commit message length: 63 chars
+- Based on 139 commits
+
+---
+id: LuvLyricsApp-naming-files
+trigger: "when creating a new file"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: https://github.com/LuvLyricsApp/LuvLyricsApp
+---
+
+# LuvLyricsApp Naming Files
+
+## Action
+
+Use PascalCase naming convention
+
+## Evidence
+
+- Analyzed file naming patterns in repository
+- Dominant pattern: PascalCase
+
+---
+id: LuvLyricsApp-import-relative
+trigger: "when importing modules"
+confidence: 0.75
+domain: code-style
+source: repo-analysis
+source_repo: https://github.com/LuvLyricsApp/LuvLyricsApp
+---
+
+# LuvLyricsApp Import Relative
+
+## Action
+
+Use relative imports for project files
+
+## Evidence
+
+- Import analysis shows relative import pattern
+- Example: import { x } from '../lib/x'
+
+---
+id: LuvLyricsApp-export-style
+trigger: "when exporting from a module"
+confidence: 0.7
+domain: code-style
+source: repo-analysis
+source_repo: https://github.com/LuvLyricsApp/LuvLyricsApp
+---
+
+# LuvLyricsApp Export Style
+
+## Action
+
+Prefer named exports
+
+## Evidence
+
+- Export pattern analysis
+- Dominant style: named
+
+---
+id: LuvLyricsApp-arch-type-based
+trigger: "when adding new code"
+confidence: 0.8
+domain: architecture
+source: repo-analysis
+source_repo: https://github.com/LuvLyricsApp/LuvLyricsApp
+---
+
+# LuvLyricsApp Arch Type Based
+
+## Action
+
+Place code in the appropriate type folder (components/, services/, utils/, etc.)
+
+## Evidence
+
+- Type-based module organization detected
+- Folders: components, constants, contexts, database, hooks
+
+---
+id: LuvLyricsApp-test-colocate
+trigger: "when writing tests"
+confidence: 0.85
+domain: testing
+source: repo-analysis
+source_repo: https://github.com/LuvLyricsApp/LuvLyricsApp
+---
+
+# LuvLyricsApp Test Colocate
+
+## Action
+
+Place test file next to the source file (e.g., Button.test.tsx next to Button.tsx)
+
+## Evidence
+
+- Colocated test pattern detected
+- Tests live alongside source files
+
+---
+id: LuvLyricsApp-test-framework
+trigger: "when writing tests"
+confidence: 0.9
+domain: testing
+source: repo-analysis
+source_repo: https://github.com/LuvLyricsApp/LuvLyricsApp
+---
+
+# LuvLyricsApp Test Framework
+
+## Action
+
+Use jest as the test framework
+
+## Evidence
+
+- Test framework detected: jest
+- File pattern: *.test.ts
+
+---
+id: LuvLyricsApp-test-naming
+trigger: "when creating a test file"
+confidence: 0.85
+domain: testing
+source: repo-analysis
+source_repo: https://github.com/LuvLyricsApp/LuvLyricsApp
+---
+
+# LuvLyricsApp Test Naming
+
+## Action
+
+Name test files using the pattern: *.test.ts
+
+## Evidence
+
+- File pattern: *.test.ts
+- Consistent across test files
+
+---
+id: LuvLyricsApp-test-mocking
+trigger: "when mocking dependencies in tests"
+confidence: 0.75
+domain: testing
+source: repo-analysis
+source_repo: https://github.com/LuvLyricsApp/LuvLyricsApp
+---
+
+# LuvLyricsApp Test Mocking
+
+## Action
+
+Use jest.mock for mocking
+
+## Evidence
+
+- Mocking pattern detected: jest.mock
+- Consistent across test files
+
+---
+id: LuvLyricsApp-test-types
+trigger: "when planning tests for a feature"
+confidence: 0.7
+domain: testing
+source: repo-analysis
+source_repo: https://github.com/LuvLyricsApp/LuvLyricsApp
+---
+
+# LuvLyricsApp Test Types
+
+## Action
+
+Write unit, integration tests to match project standards
+
+## Evidence
+
+- Test types detected: unit, integration
+- Coverage config: yes
+
+---
+id: LuvLyricsApp-workflow-feature-development
+trigger: "when implementing a new feature"
+confidence: 0.9
+domain: workflow
+source: repo-analysis
+source_repo: https://github.com/LuvLyricsApp/LuvLyricsApp
+---
+
+# LuvLyricsApp Workflow Feature Development
+
+## Action
+
+Follow the feature-development workflow:
+1. Add feature implementation
+2. Add tests for feature
+3. Update documentation
+
+## Evidence
+
+- Workflow detected from commit patterns
+- Frequency: ~9x per month
+- Files: src/services/*, src/utils/*, src/screens/*
+
+---
+id: LuvLyricsApp-workflow-refactoring
+trigger: "when refactoring code"
+confidence: 0.75
+domain: workflow
+source: repo-analysis
+source_repo: https://github.com/LuvLyricsApp/LuvLyricsApp
+---
+
+# LuvLyricsApp Workflow Refactoring
+
+## Action
+
+Follow the refactoring workflow:
+1. Ensure tests pass before refactor
+2. Refactor code structure
+3. Verify tests still pass
+
+## Evidence
+
+- Workflow detected from commit patterns
+- Frequency: ~5x per month
+- Files: src/**/*
+
+---
+id: LuvLyricsApp-workflow-fix-bug-or-issue-across-multiple-screens
+trigger: "when doing fix bug or issue across multiple screens"
+confidence: 0.6
+domain: workflow
+source: repo-analysis
+source_repo: https://github.com/LuvLyricsApp/LuvLyricsApp
+---
+
+# LuvLyricsApp Workflow Fix Bug Or Issue Across Multiple Screens
+
+## Action
+
+Follow the fix-bug-or-issue-across-multiple-screens workflow:
+1. Identify all affected screens/components.
+2. Modify relevant files to implement the fix or feature.
+3. Update constants or shared resources if needed.
+4. Test across all affected screens.
+
+## Evidence
+
+- Workflow detected from commit patterns
+- Frequency: ~2x per month
+- Files: src/App.tsx, src/components/*.tsx, src/constants/*.ts
+
+---
+id: LuvLyricsApp-workflow-refactor-handler-usecallback
+trigger: "when doing refactor handler usecallback"
+confidence: 0.55
+domain: workflow
+source: repo-analysis
+source_repo: https://github.com/LuvLyricsApp/LuvLyricsApp
+---
+
+# LuvLyricsApp Workflow Refactor Handler Usecallback
+
+## Action
+
+Follow the refactor-handler-usecallback workflow:
+1. Identify inline event handlers in components.
+2. Wrap handlers in useCallback.
+3. Test for regressions.
+
+## Evidence
+
+- Workflow detected from commit patterns
+- Frequency: ~1x per month
+- Files: src/components/*.tsx, src/screens/*.tsx
+
+---
+id: LuvLyricsApp-workflow-add-or-update-database-queries-and-tests
+trigger: "when doing add or update database queries and tests"
+confidence: 0.6
+domain: workflow
+source: repo-analysis
+source_repo: https://github.com/LuvLyricsApp/LuvLyricsApp
+---
+
+# LuvLyricsApp Workflow Add Or Update Database Queries And Tests
+
+## Action
+
+Follow the add-or-update-database-queries-and-tests workflow:
+1. Edit or add query logic in src/database/*.ts.
+2. Update or create tests in src/database/*.test.ts.
+3. Run tests to verify correctness.
+
+## Evidence
+
+- Workflow detected from commit patterns
+- Frequency: ~2x per month
+- Files: src/database/queries.ts, src/database/queries.test.ts
+
+---
+id: LuvLyricsApp-workflow-remove-dead-code-and-unused-imports
+trigger: "when doing remove dead code and unused imports"
+confidence: 0.6
+domain: workflow
+source: repo-analysis
+source_repo: https://github.com/LuvLyricsApp/LuvLyricsApp
+---
+
+# LuvLyricsApp Workflow Remove Dead Code And Unused Imports
+
+## Action
+
+Follow the remove-dead-code-and-unused-imports workflow:
+1. Identify dead/commented-out code and unused imports.
+2. Remove them from relevant files.
+3. Test app to ensure no regressions.
+
+## Evidence
+
+- Workflow detected from commit patterns
+- Frequency: ~2x per month
+- Files: src/components/*.tsx, src/screens/*.tsx, src/services/*.ts
+
+---
+id: LuvLyricsApp-workflow-documentation-update-or-revamp
+trigger: "when doing documentation update or revamp"
+confidence: 0.6
+domain: workflow
+source: repo-analysis
+source_repo: https://github.com/LuvLyricsApp/LuvLyricsApp
+---
+
+# LuvLyricsApp Workflow Documentation Update Or Revamp
+
+## Action
+
+Follow the documentation-update-or-revamp workflow:
+1. Edit documentation files (README.md, CONTRIBUTING.md, etc.).
+2. Add or update badges, contact info, or event sections.
+3. Commit and push changes.
+
+## Evidence
+
+- Workflow detected from commit patterns
+- Frequency: ~2x per month
+- Files: README.md, CONTRIBUTING.md, SECURITY.md
+
+---
+id: LuvLyricsApp-workflow-add-or-update-unit-tests-for-utilities-or-services
+trigger: "when doing add or update unit tests for utilities or services"
+confidence: 0.6
+domain: workflow
+source: repo-analysis
+source_repo: https://github.com/LuvLyricsApp/LuvLyricsApp
+---
+
+# LuvLyricsApp Workflow Add Or Update Unit Tests For Utilities Or Services
+
+## Action
+
+Follow the add-or-update-unit-tests-for-utilities-or-services workflow:
+1. Write or update test files for utilities/services.
+2. Ensure tests cover edge cases.
+3. Run tests to verify correctness.
+
+## Evidence
+
+- Workflow detected from commit patterns
+- Frequency: ~2x per month
+- Files: src/utils/*.test.ts, src/services/*.test.ts
+
+---
+id: luvlyricsapp-instinct-file-naming
+trigger: "When creating a new file in the codebase"
+confidence: 0.9
+domain: code-style
+source: repo-analysis
+source_repo: LuvLyricsApp/LuvLyricsApp
+---
+
+# Luvlyricsapp Instinct File Naming
+
+## Action
+
+Name the file using PascalCase (e.g., MyComponent.tsx)
+
+## Evidence
+
+- Pattern in folder src/components
+- Naming conventions specified in analysis
+
+---
+id: luvlyricsapp-instinct-function-naming
+trigger: "When defining a new function"
+confidence: 0.9
+domain: code-style
+source: repo-analysis
+source_repo: LuvLyricsApp/LuvLyricsApp
+---
+
+# Luvlyricsapp Instinct Function Naming
+
+## Action
+
+Use camelCase for the function name
+
+## Evidence
+
+- Naming conventions specified in analysis
+- Pattern in src/services/DownloadManager.ts
+
+---
+id: luvlyricsapp-instinct-class-naming
+trigger: "When defining a new class"
+confidence: 0.9
+domain: code-style
+source: repo-analysis
+source_repo: LuvLyricsApp/LuvLyricsApp
+---
+
+# Luvlyricsapp Instinct Class Naming
+
+## Action
+
+Use PascalCase for the class name
+
+## Evidence
+
+- Naming conventions specified in analysis
+
+---
+id: luvlyricsapp-instinct-constant-naming
+trigger: "When declaring a constant"
+confidence: 0.9
+domain: code-style
+source: repo-analysis
+source_repo: LuvLyricsApp/LuvLyricsApp
+---
+
+# Luvlyricsapp Instinct Constant Naming
+
+## Action
+
+Use SCREAMING_SNAKE_CASE for the constant name
+
+## Evidence
+
+- Naming conventions specified in analysis
+
+---
+id: luvlyricsapp-instinct-import-style
+trigger: "When importing modules"
+confidence: 0.9
+domain: code-style
+source: repo-analysis
+source_repo: LuvLyricsApp/LuvLyricsApp
+---
+
+# Luvlyricsapp Instinct Import Style
+
+## Action
+
+Use relative import paths
+
+## Evidence
+
+- ImportStyle: relative in analysis
+- Pattern in src/App.tsx
+
+---
+id: luvlyricsapp-instinct-export-style
+trigger: "When exporting modules or functions"
+confidence: 0.9
+domain: code-style
+source: repo-analysis
+source_repo: LuvLyricsApp/LuvLyricsApp
+---
+
+# Luvlyricsapp Instinct Export Style
+
+## Action
+
+Use named exports
+
+## Evidence
+
+- ExportStyle: named in analysis
+- Pattern in src/services/DownloadManager.ts
+
+---
+id: luvlyricsapp-instinct-write-unit-test
+trigger: "When adding or updating a function or service"
+confidence: 0.9
+domain: testing
+source: repo-analysis
+source_repo: LuvLyricsApp/LuvLyricsApp
+---
+
+# Luvlyricsapp Instinct Write Unit Test
+
+## Action
+
+Create or update a corresponding *.test.ts file colocated with the implementation
+
+## Evidence
+
+- Pattern: test files are colocated
+- Example: src/database/queries.test.ts
+
+---
+id: luvlyricsapp-instinct-jest-mocking
+trigger: "When mocking dependencies in tests"
+confidence: 0.9
+domain: testing
+source: repo-analysis
+source_repo: LuvLyricsApp/LuvLyricsApp
+---
+
+# Luvlyricsapp Instinct Jest Mocking
+
+## Action
+
+Use jest.mock to mock modules or functions
+
+## Evidence
+
+- MockingStyle: jest.mock in analysis
+- Pattern in src/services/*.test.ts
+
+---
+id: luvlyricsapp-instinct-test-coverage
+trigger: "When configuring or running tests"
+confidence: 0.8
+domain: testing
+source: repo-analysis
+source_repo: LuvLyricsApp/LuvLyricsApp
+---
+
+# Luvlyricsapp Instinct Test Coverage
+
+## Action
+
+Ensure coverage configuration is enabled and coverage is reported
+
+## Evidence
+
+- coverageConfig: true in analysis
+- Presence of jest.config.js
+
+---
+id: luvlyricsapp-instinct-test-pattern
+trigger: "When naming test files"
+confidence: 0.9
+domain: testing
+source: repo-analysis
+source_repo: LuvLyricsApp/LuvLyricsApp
+---
+
+# Luvlyricsapp Instinct Test Pattern
+
+## Action
+
+Use the pattern *.test.ts for test files
+
+## Evidence
+
+- testLocation: colocated
+- testTypes: unit, integration
+- Pattern in src/database/queries.test.ts
+
+---
+id: luvlyricsapp-instinct-conventional-commit
+trigger: "When writing a commit message"
+confidence: 0.95
+domain: git
+source: repo-analysis
+source_repo: LuvLyricsApp/LuvLyricsApp
+---
+
+# Luvlyricsapp Instinct Conventional Commit
+
+## Action
+
+Use conventional commit format: <type>(<scope>): <description>
+
+## Evidence
+
+- Commits: 'fix(accessibility): add accessibilityLabel...'
+- Prefix list: fix, feat, docs, chore, refactor
+
+---
+id: luvlyricsapp-instinct-commit-length
+trigger: "When writing a commit message"
+confidence: 0.8
+domain: git
+source: repo-analysis
+source_repo: LuvLyricsApp/LuvLyricsApp
+---
+
+# Luvlyricsapp Instinct Commit Length
+
+## Action
+
+Keep the commit message concise, around 60-70 characters
+
+## Evidence
+
+- Average commit length: 63
+- Pattern in commit examples
+
+---
+id: luvlyricsapp-instinct-fix-multi-screen
+trigger: "When a bug or feature affects multiple screens/components"
+confidence: 0.9
+domain: workflow
+source: repo-analysis
+source_repo: LuvLyricsApp/LuvLyricsApp
+---
+
+# Luvlyricsapp Instinct Fix Multi Screen
+
+## Action
+
+Identify all affected files in src/App.tsx, src/components/*.tsx, src/constants/*.ts, src/screens/*.tsx and update them; test across all affected screens
+
+## Evidence
+
+- Workflow: fix-bug-or-issue-across-multiple-screens
+- Example commits and files in workflow
+
+---
+id: luvlyricsapp-instinct-refactor-usecallback
+trigger: "When optimizing React component re-renders or function references"
+confidence: 0.85
+domain: workflow
+source: repo-analysis
+source_repo: LuvLyricsApp/LuvLyricsApp
+---
+
+# Luvlyricsapp Instinct Refactor Usecallback
+
+## Action
+
+Wrap inline event handlers in useCallback in src/components/*.tsx and src/screens/*.tsx
+
+## Evidence
+
+- Workflow: refactor-handler-usecallback
+- Commit: 'refactor: wrap inline handlers in useCallback for stable function refs'
+
+---
+id: luvlyricsapp-instinct-db-query-update
+trigger: "When adding or updating database queries"
+confidence: 0.9
+domain: workflow
+source: repo-analysis
+source_repo: LuvLyricsApp/LuvLyricsApp
+---
+
+# Luvlyricsapp Instinct Db Query Update
+
+## Action
+
+Edit src/database/*.ts and update/create src/database/*.test.ts; run tests to verify
+
+## Evidence
+
+- Workflow: add-or-update-database-queries-and-tests
+- Commit: 'test(db): add parameterized query tests for queries.ts'
+
+---
+id: luvlyricsapp-instinct-cleanup-dead-code
+trigger: "When cleaning up the codebase"
+confidence: 0.9
+domain: workflow
+source: repo-analysis
+source_repo: LuvLyricsApp/LuvLyricsApp
+---
+
+# Luvlyricsapp Instinct Cleanup Dead Code
+
+## Action
+
+Remove dead/commented-out code and unused imports from src/components/*.tsx, src/screens/*.tsx, src/services/*.ts, src/store/*.ts; test for regressions
+
+## Evidence
+
+- Workflow: remove-dead-code-and-unused-imports
+- Commit: 'cleanup: __DEV__ guards, dead code removal, test infrastructure (#106)'
+
+---
+id: luvlyricsapp-instinct-docs-update
+trigger: "When updating documentation or project information"
+confidence: 0.95
+domain: workflow
+source: repo-analysis
+source_repo: LuvLyricsApp/LuvLyricsApp
+---
+
+# Luvlyricsapp Instinct Docs Update
+
+## Action
+
+Edit documentation files (README.md, CONTRIBUTING.md, etc.), update badges/contact/event sections, and commit changes
+
+## Evidence
+
+- Workflow: documentation-update-or-revamp
+- Commit: 'docs: GSSoC 2026 updates, Android-only cleanup across all docs'
+
+---
+id: luvlyricsapp-instinct-add-unit-tests
+trigger: "When improving test coverage for utilities or services"
+confidence: 0.9
+domain: workflow
+source: repo-analysis
+source_repo: LuvLyricsApp/LuvLyricsApp
+---
+
+# Luvlyricsapp Instinct Add Unit Tests
+
+## Action
+
+Write or update test files in src/utils/*.test.ts or src/services/*.test.ts; ensure edge cases are covered and run tests
+
+## Evidence
+
+- Workflow: add-or-update-unit-tests-for-utilities-or-services
+- Commit: 'test: formatters, lyricsState, and SmartLyricMatcher unit tests'
+
