@@ -25,7 +25,7 @@ import {
 } from 'react-native';
 import { usePlayerStore } from '../store/playerStore';
 import { YoutubeBrowserStrings } from '../constants/uiStrings';
-import { WebView, WebViewNavigation, WebViewMessageEvent } from 'react-native-webview';
+import { WebView, WebViewNavigation } from 'react-native-webview';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -40,109 +40,8 @@ import Animated, {
 // Uses m.youtube.com + ytInitialPlayerResponse interception (Snaptube style)
 const YOUTUBE_URL = 'https://m.youtube.com';
 
-const INJECTION_SCRIPT = `
-(function() {
-  var lastVideoId = '';
-  
-  function getVideoIdFromUrl() {
-    // m.youtube.com format: /watch?v=...
-    var match = location.href.match(/[?&]v=([a-zA-Z0-9_-]{11})/);
-    return match ? match[1] : null;
-  }
-
-  function extractFromPlayerResponse() {
-    try {
-      var videoId = getVideoIdFromUrl();
-      if (!videoId || videoId === lastVideoId) return;
-
-      // 1. Check for ytInitialPlayerResponse (global variable on mobile web)
-      var playerResponse = window.ytInitialPlayerResponse;
-      
-      // 2. Fallback: Check ytcfg object if response is missing
-      if (!playerResponse && window.ytcfg && window.ytcfg.data_ && window.ytcfg.data_.PLAYER_VARS) {
-         var playerVars = window.ytcfg.data_.PLAYER_VARS;
-         if (playerVars.embedded_player_response) {
-            playerResponse = JSON.parse(playerVars.embedded_player_response);
-         }
-      }
-
-      if (!playerResponse || !playerResponse.streamingData) return;
-
-      var streamingData = playerResponse.streamingData;
-      var formats = (streamingData.adaptiveFormats || []).concat(streamingData.formats || []);
-      
-      // Filter for unencrypted URLs (no signatureCipher)
-      var validFormats = formats.filter(function(f) {
-        return f.url && f.url.indexOf('googlevideo.com') !== -1;
-      });
-
-      if (validFormats.length > 0) {
-        // Sort by audio quality
-        var audioFormats = validFormats.filter(function(f) {
-           return (f.mimeType || '').indexOf('audio') !== -1;
-        });
-        
-        if (audioFormats.length > 0) {
-            audioFormats.sort(function(a, b) {
-                // Prefer m4a over webm
-                var aIsMp4 = (a.mimeType || '').indexOf('mp4') !== -1 ? 1 : 0;
-                var bIsMp4 = (b.mimeType || '').indexOf('mp4') !== -1 ? 1 : 0;
-                if (aIsMp4 !== bIsMp4) return bIsMp4 - aIsMp4;
-                return (b.bitrate || 0) - (a.bitrate || 0);
-            });
-            var bestAudio = audioFormats[0];
-            
-            lastVideoId = videoId;
-            var videoDetails = playerResponse.videoDetails || {};
-            
-            window.ReactNativeWebView.postMessage(JSON.stringify({
-                type: 'AUDIO_EXTRACTED',
-                videoId: videoId,
-                title: videoDetails.title || document.title,
-                author: videoDetails.author || 'Unknown',
-                audioUrl: bestAudio.url,
-                audioBitrate: bestAudio.bitrate || 128000,
-                audioMimeType: bestAudio.mimeType || 'audio/mp4', // approximate
-                lengthSeconds: parseInt(videoDetails.lengthSeconds || '0'),
-                thumbnail: 'https://i.ytimg.com/vi/' + videoId + '/hqdefault.jpg'
-            }));
-            return;
-        }
-        
-        // Fallback to video stream if no pure audio found (mp4 video often bas mixed audio)
-        var bestVideo = validFormats[0];
-        lastVideoId = videoId;
-        var videoDetails = playerResponse.videoDetails || {};
-
-        window.ReactNativeWebView.postMessage(JSON.stringify({
-            type: 'AUDIO_EXTRACTED',
-            videoId: videoId,
-            title: videoDetails.title || document.title,
-            author: videoDetails.author || 'Unknown',
-            audioUrl: bestVideo.url,
-            audioBitrate: 64000, // assume lower qual
-            audioMimeType: 'video/mp4',
-            lengthSeconds: parseInt(videoDetails.lengthSeconds || '0'),
-            thumbnail: 'https://i.ytimg.com/vi/' + videoId + '/hqdefault.jpg'
-        }));
-      }
-
-    } catch(e) {
-      window.ReactNativeWebView.postMessage(JSON.stringify({ 
-        type: 'EXTRACTION_ERROR', error: e.message 
-      }));
-    }
-  }
-
-  // Poll for player response change
-  setInterval(function() {
-    if (location.href.indexOf('watch?v=') !== -1) {
-       extractFromPlayerResponse();
-    }
-  }, 1000);
-})();
-true;
-`;
+// YouTube extraction logic removed to avoid shipping code that extracts
+// direct CDN URLs. This file remains a regular in-app browser for browsing.
 
 // ─── Types ──────────────────────────────────────────────────────────
 interface VideoInfo {
@@ -171,7 +70,6 @@ export const YoutubeBrowserScreen = ({ navigation }: any) => {
   const [videoInfo, setVideoInfo] = useState<VideoInfo | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [isExtracting, setIsExtracting] = useState(false);
 
   // FAB animation
   const fabScale = useSharedValue(0);
@@ -201,54 +99,15 @@ export const YoutubeBrowserScreen = ({ navigation }: any) => {
   const handleNavigationChange = useCallback((navState: WebViewNavigation) => {
     const isVideo = navState.url.includes('watch?v=');
     
-    if (isVideo && !isVideoPage) {
-      setIsExtracting(true);
-    }
     setIsVideoPage(isVideo);
 
     if (!isVideo) {
       setVideoInfo(null);
-      setIsExtracting(false);
       hideFab();
     }
   }, [isVideoPage, hideFab]);
 
-  // ─── Message Handler ───────────────────────────────────────
-  const handleMessage = useCallback((event: WebViewMessageEvent) => {
-    try {
-      const data = JSON.parse(event.nativeEvent.data);
-
-      if (data.type === 'AUDIO_EXTRACTED') {
-        const bitrateKbps = Math.round((data.audioBitrate || 128000) / 1000);
-        const ext = data.audioMimeType?.includes('audio/mp4') ? 'm4a' : 'webm';
-        
-        if (__DEV__) {
-          console.log(`[YTBrowser] ✓ Audio extracted: ${data.title}`);
-          console.log(`[YTBrowser] URL: ${data.audioUrl.substring(0, 100)}...`);
-          console.log(`[YTBrowser] Bitrate: ${bitrateKbps}kbps, Format: ${ext}, Duration: ${data.lengthSeconds}s`);
-        }
-        
-        setVideoInfo({
-          title: data.title,
-          author: data.author,
-          videoId: data.videoId,
-          audioUrl: data.audioUrl,
-          audioBitrate: bitrateKbps,
-          audioFormat: ext,
-          thumbnail: data.thumbnail,
-          lengthSeconds: data.lengthSeconds || 0,
-        });
-
-        setIsExtracting(false);
-        showFab();
-      } else if (data.type === 'EXTRACTION_ERROR') {
-         // Silent warning
-         if (__DEV__) console.log(`[YTBrowser] Extraction err: ${data.error}`);
-      }
-    } catch {
-      // Ignore non-JSON messages
-    }
-  }, [showFab]);
+  // Message handling and injection removed to prevent on-device extraction.
 
   // ─── FAB Press ─────────────────────────────────────────────
   const handleDownloadPress = useCallback(() => {
@@ -315,9 +174,7 @@ export const YoutubeBrowserScreen = ({ navigation }: any) => {
           ref={webViewRef}
           source={{ uri: YOUTUBE_URL }}
           style={[styles.webview, loadError ? { height: 0 } : {}]}
-          injectedJavaScript={INJECTION_SCRIPT}
           onNavigationStateChange={handleNavigationChange}
-          onMessage={handleMessage}
           onLoadStart={() => { setIsLoading(true); setLoadError(null); }}
           onLoadEnd={() => setIsLoading(false)}
           onError={(syntheticEvent) => {
@@ -331,7 +188,8 @@ export const YoutubeBrowserScreen = ({ navigation }: any) => {
           javaScriptEnabled={true}
           domStorageEnabled={true}
           thirdPartyCookiesEnabled={true}
-          originWhitelist={['https://*', 'http://*']}
+          // Tighten origin whitelist to the mobile YouTube site and avoid open http origins.
+          originWhitelist={['https://m.youtube.com']}
           setSupportMultipleWindows={false}
           startInLoadingState={true}
           cacheEnabled={true}
@@ -346,13 +204,7 @@ export const YoutubeBrowserScreen = ({ navigation }: any) => {
           </View>
         )}
 
-        {/* Extracting audio badge */}
-        {isExtracting && (
-          <View style={styles.detectingBadge}>
-            <ActivityIndicator size="small" color="#FFD700" />
-            <Text style={styles.detectingText}>{YoutubeBrowserStrings.analyzingStream}</Text>
-          </View>
-        )}
+  {/* Extracting audio feature removed for compliance */}
 
         {/* Floating Action Button */}
         <Animated.View style={[styles.fabContainer, fabAnimatedStyle]}>
